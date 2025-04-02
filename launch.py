@@ -1,4 +1,4 @@
-import main_loop
+import main_menu
 
 if __name__ == "__main__":
-    main_loop.main()
+    main_menu.main()

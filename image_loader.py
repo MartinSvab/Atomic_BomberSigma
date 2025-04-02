@@ -15,4 +15,5 @@ def ResizeImage(image, aspect_ratio):
 
 
 INTRO_LOGO_image = pygame.image.load("images\\bomberNLogo.png")
+MENU_QUIT_image = pygame.image.load("images\\quit.png")
 

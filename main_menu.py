@@ -5,7 +5,8 @@ from init import screen, clock, FPS
 import image_loader as image
 
 
-logo = image.ResizeImage(image.INTRO_LOGO_image,0.2)
+logo = image.ResizeImage(image.INTRO_LOGO_image,0.4)
+quit = image.ResizeImage(image.MENU_QUIT_image, 0.2)
 
 # Main game loop
 def main():
@@ -22,11 +23,13 @@ def main():
 
 
 
-
-        # Draw everything
-        screen.fill((35,35,35))
+        
+        
+        screen.fill((35,35,35)) #bg
         screen.blit(logo, 
-                    ((screen.get_width()/2)-(logo.get_width()/2),screen.get_height()/10))
+                    ((screen.get_width()/2)-(logo.get_width()/2),screen.get_height()/10)) #logo
+        screen.blit(quit,
+                    ((screen.get_width()/2)-(quit.get_width()/2), screen.get_height()/1.5)) #quit
 
         # Flip the display
         pygame.display.flip()
