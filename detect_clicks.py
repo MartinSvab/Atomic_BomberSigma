@@ -9,7 +9,6 @@ import pygame
 def checkForClickInBounds(screenRatioX, screenRatioY, buttonsize:tuple[int,int], mousePos):
     xPos = SCREEN.current_w/screenRatioX - buttonsize[0]/2 #= -1/2 buttonsize accounts for centering the button
     yPos = SCREEN.current_h/screenRatioY
-    print("clicked")
 
     if intWithin(xPos, mousePos[0], xPos + buttonsize[0]) and intWithin(yPos, mousePos[1], yPos + buttonsize[1]):
         return True
