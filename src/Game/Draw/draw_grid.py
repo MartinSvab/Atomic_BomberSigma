@@ -1,5 +1,6 @@
 import random
 import pygame
+from Misc import image_loader as images
 from Misc.init import screen
 
 
@@ -27,6 +28,9 @@ def draw_grid():
             x = GRID_X_POS + (row*TILE_SIZE)
             y = GRID_Y_POS + (col*TILE_SIZE)
 
+            resized_tile = images.ResizeImage(images.GAME_TILE_image,(TILE_SIZE/images.GAME_TILE_image.get_width()))
+            tile_rect = images.RotateImage(resized_tile,random.randint(0,3)*90).convert_alpha()
+
             tile = pygame.Rect(x,y,TILE_SIZE,TILE_SIZE)
 
-            pygame.draw.rect(screen,(random.randint(0,255),random.randint(0,255),random.randint(0,255)),tile)
+            screen.blit(tile_rect,(x,y))
