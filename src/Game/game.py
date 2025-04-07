@@ -1,6 +1,9 @@
 import pygame
 from Misc.init import screen, clock, FPS
-from Game.Draw import draw_grid
+from Game.Objects import grid
+
+
+TILE_GRID = grid.create_grid()
 
 def run():
     PLAYING = True
@@ -17,9 +20,10 @@ def run():
                         return
 
 
-        screen.fill((23,53,222))
+        screen.fill((35,35,35))
 
-        draw_grid.draw_grid()
+        
+        TILE_GRID.DisplayGrid(screen)
 
         # Flip the display
         pygame.display.flip()
