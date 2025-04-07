@@ -1,13 +1,13 @@
 {
   "version": "0.2.0",
   "configurations": [
-      {
-          "name": "Run launch.py",
-          "type": "debugpy",
-          "request": "launch",
-          "program": "${workspaceFolder}/Scripts/Misc/launch.py",
-          "console": "integratedTerminal",
-          "cwd": "${workspaceFolder}"
-      }
+    {
+      "name": "Run launch.py",
+      "type": "python",
+      "request": "launch",
+      "program": "launch.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}\\src"
+    }
   ]
 }
