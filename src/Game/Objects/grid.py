@@ -13,14 +13,35 @@ class Grid:
     def DisplayGrid(self, screen):
         for tile in self.tiles:
             screen.blit(tile.sprite,(tile.pos))
+            if tile.obstacle == True:
+                screen.blit(images.ResizeImage(images.GAME_OBSTACLE_image, TILE_SIZE/images.GAME_OBSTACLE_image.get_width()),(tile.pos))
 
 
 
 
 class Tile:
-    def __init__(self, pos:tuple[float,float], sprite):
+    def __init__(self, pos:tuple[float,float], sprite, obstacle):
         self.pos = pos
         self.sprite = sprite
+        self.obstacle = obstacle
+        self.neighbours = []
+    
+    def AssignNeighbours(self,tiles):
+        directions = [
+            (128,0), #right
+            (0,128), #down
+            (-128,0), #left
+            (0,-128)] #up
+        neighboursLen = 0
+        for direction in directions:
+            for index, tile in enumerate(tiles):
+                dx, dy = direction
+                target_pos = (self.pos[0] + dx, self.pos[1] + dy)
+                if target_pos== tile.pos:
+                    self.neighbours.append(index)
+            if neighboursLen == len(self.neighbours):
+                self.neighbours.append(None)
+            neighboursLen += 1
 
 
 
@@ -45,7 +66,7 @@ GRID_Y_POS = (WINDOW_HEIGHT - BOARD_HEIGHT) / 2 #YAYY PIXELS
 
 #-create the grid-
 
-def create_grid():
+def Create_Grid():
     tiles=[]
     for row in range(GRID_WIDTH):
         for col in range(GRID_HEIGHT):
@@ -55,8 +76,17 @@ def create_grid():
             sprite = pygame.transform.rotate(images.GAME_TILE_image, (random.randint(0,3)*90))
             sprite = images.ResizeImage(sprite,TILE_SIZE/sprite.get_width()).convert_alpha()
 
-            tile = Tile((x,y), sprite)
+            #decide if tile has obstacle
+            if random.randint(0, 5) == 2:
+                tile = Tile((x,y), sprite, True)
+            else:
+                tile = Tile((x,y), sprite, False)
+
             tiles.append(tile)
+
+    for tile in tiles:
+        #pass neighbouring tiles to tile
+        tile.AssignNeighbours(tiles)
             
 
     grid = Grid((x,y),tiles)        
