@@ -28,10 +28,10 @@ class Tile:
     
     def AssignNeighbours(self,tiles):
         directions = [
-            (128,0), #right
-            (0,128), #down
-            (-128,0), #left
-            (0,-128)] #up
+            (128,0), #right 0
+            (0,128), #down 1
+            (-128,0), #left 2
+            (0,-128)] #up 3
         neighboursLen = 0
         for direction in directions:
             for index, tile in enumerate(tiles):

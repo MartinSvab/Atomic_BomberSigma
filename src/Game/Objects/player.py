@@ -14,14 +14,14 @@ class Player:
         
         #add other shit for like bombs and classes
 
-    def DisplayPlayer(self, pos, screen):
+    def DisplayPlayer(self, screen):
         for i in [0, 1]:  # x and y
             if self.pos[i] < self.target_pos[i]:
                 self.pos[i] += min(self.speed, self.target_pos[i] - self.pos[i])
             elif self.pos[i] > self.target_pos[i]:
                 self.pos[i] -= min(self.speed, self.pos[i] - self.target_pos[i])
 
-        screen.blit(self.sprite, pos)
+        screen.blit(self.sprite, self.pos)
 
     def MovePlayer(self, direction, grid, playerTile):
         next_idx = None

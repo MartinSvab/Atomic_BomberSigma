@@ -5,6 +5,7 @@ import colorsys
 
 def ResizeImage(image, aspect_ratio):
     original = image
+
     screen_info = pygame.display.Info()
 
     new_width = int(original.get_width() * aspect_ratio)
@@ -45,9 +46,15 @@ def shift_hue(surface, hue_shift):
 
 
 #make a script for loading all images in a loop
-INTRO_LOGO_image = pygame.image.load("..\\images\\bomberNLogo.png")
-MENU_QUIT_image = pygame.image.load("..\\images\\quit.png")
-MENU_PLAY_image = pygame.image.load("..\\images\\play.png")
-GAME_TILE_image = pygame.image.load("..\\images\\tile.png")
-GAME_PLAYER_image = pygame.image.load("..\\images\\spajt.png")
-GAME_OBSTACLE_image = pygame.image.load("..\\images\\stone.png")
+INTRO_LOGO_image = pygame.image.load("..\\images\\bomberNLogo.png").convert_alpha()
+MENU_QUIT_image = pygame.image.load("..\\images\\quit.png").convert_alpha()
+MENU_PLAY_image = pygame.image.load("..\\images\\play.png").convert_alpha()
+GAME_TILE_image = pygame.image.load("..\\images\\tile.png").convert_alpha()
+GAME_PLAYER_image = pygame.image.load("..\\images\\spajt.png").convert_alpha()
+GAME_OBSTACLE_image = pygame.image.load("..\\images\\stone.png").convert_alpha()
+GAME_BOMBS_array = [pygame.image.load("..\\images\\bomb_1.png").convert_alpha(),
+                    pygame.image.load("..\\images\\bomb_2.png").convert_alpha(),
+                    pygame.image.load("..\\images\\bomb_3.png").convert_alpha(),
+                    pygame.image.load("..\\images\\bomb_4.png").convert_alpha(),]
+GAME_EXPLOSION_array = [pygame.image.load("..\\images\\hexplosion.png").convert_alpha(), 
+                        pygame.image.load("..\\images\\vexplosion.png").convert_alpha()]
