@@ -68,8 +68,8 @@ GRID_Y_POS = (WINDOW_HEIGHT - BOARD_HEIGHT) / 2 #YAYY PIXELS
 
 def Create_Grid():
     tiles=[]
-    for row in range(GRID_WIDTH):
-        for col in range(GRID_HEIGHT):
+    for col in range(GRID_HEIGHT):
+        for row in range(GRID_WIDTH):
             x = GRID_X_POS + (row*TILE_SIZE)
             y = GRID_Y_POS + (col*TILE_SIZE)
 

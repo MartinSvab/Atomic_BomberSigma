@@ -8,38 +8,43 @@ class Player:
         self.sprite = images.ResizeImage(self.sprite, grid.TILE_SIZE/self.sprite.get_width())
         self.hue = hue
         self.pos = list(tile.pos)
+        self.target_pos = self.pos.copy()
+        self.speed = 10  # pixels per frame (you can tweak this)
+
         
         #add other shit for like bombs and classes
 
     def DisplayPlayer(self, pos, screen):
-        screen.blit(self.sprite,  pos)
+        for i in [0, 1]:  # x and y
+            if self.pos[i] < self.target_pos[i]:
+                self.pos[i] += min(self.speed, self.target_pos[i] - self.pos[i])
+            elif self.pos[i] > self.target_pos[i]:
+                self.pos[i] -= min(self.speed, self.pos[i] - self.target_pos[i])
+
+        screen.blit(self.sprite, pos)
 
     def MovePlayer(self, direction, grid, playerTile):
+        next_idx = None
         match direction:
             case "up":
                 next_idx=playerTile.neighbours[3]
-                if grid.tiles[0].pos[1] < self.pos[1] and next_idx is not None:
-                    self.pos[1] -= 128
-                    return next_idx
             case "left":
                 next_idx=playerTile.neighbours[2]
-                if grid.tiles[0].pos[0] < self.pos[0] and next_idx is not None:
-                    self.pos[0] -= 128
-                    return next_idx
             case "right":
                 next_idx=playerTile.neighbours[0]
-                if grid.tiles[-1].pos[0] > self.pos[0] and next_idx is not None:
-                    self.pos[0] += 128
-                    return next_idx
             case "down":
                 next_idx=playerTile.neighbours[1]
-                if grid.tiles[-1].pos[1] > self.pos[1] and next_idx is not None:
-                    self.pos[1] += 128
-                    print("DOWN:", self.pos, "last tile y-pos:", grid.tiles[-1].pos[1], "next_idx:", next_idx)
 
-                    return next_idx     
+        if next_idx is not None and grid.tiles[next_idx].obstacle is not True:
+            next_tile = grid.tiles[next_idx]
+            self.target_pos = list(next_tile.pos)
+            return next_tile     
         return None
+    
+    def is_moving(self):
+        return self.pos != self.target_pos
 
+    
 
 def Create_Player(hue, pos):
     return Player(hue, pos)
