@@ -53,7 +53,7 @@ def run():
 
         #bomb handling
 
-        if not player1.is_moving():
+        if not player1.is_moving() and not playerTile.bomb:
             if keys[pygame.K_SPACE]:
                 ACTIVE_BOMBS.append(bomb.Bomb.Create_Bomb(playerTile,pygame.time.get_ticks(), 2000))
 
@@ -67,6 +67,7 @@ def run():
         for bombs in ACTIVE_BOMBS:
             percent = bombs.DisplayBomb(screen, pygame.time.get_ticks())
             if percent > 1.1:
+                bombs.location.bomb = False
                 ACTIVE_BOMBS.remove(bombs)
             elif percent < 1.1 and percent > 0.9:
                 bombs.DisplayExplosions(screen, TILE_GRID)

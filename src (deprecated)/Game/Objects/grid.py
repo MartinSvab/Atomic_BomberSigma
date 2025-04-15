@@ -25,6 +25,7 @@ class Tile:
         self.sprite = sprite
         self.obstacle = obstacle
         self.neighbours = []
+        self.bomb = False
     
     def AssignNeighbours(self,tiles):
         directions = [
