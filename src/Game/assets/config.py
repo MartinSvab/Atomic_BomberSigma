@@ -1,5 +1,4 @@
 import pygame
-from Game.assets.graphics import initialize_images
 
 # Initialize Pygame
 pygame.init()
@@ -25,5 +24,3 @@ BOARD_HEIGHT = TILE_SIZE * GRID_HEIGHT #defined in pixels
 GRID_X_POS = (SCREEN_WIDTH - BOARD_WIDTH) / 2 #pixels!
 GRID_Y_POS = (SCREEN_HEIGHT - BOARD_HEIGHT) / 2 #YAYY PIXELS
 
-# One time loading of assets
-initialize_images()
