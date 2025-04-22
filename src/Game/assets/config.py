@@ -15,7 +15,6 @@ pygame.display.set_caption("Atomic BomberSigma")
 CLOCK = pygame.time.Clock()
 
 # Grid Settings
-TILE_SIZE = 128
 TILE_SIZE = 128 #defined in pixels
 GRID_WIDTH = 8 #defined in tiles
 GRID_HEIGHT = 8 #defined in tiles
