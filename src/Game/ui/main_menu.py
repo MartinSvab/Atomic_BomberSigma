@@ -26,8 +26,6 @@ def run():
     quit_button_image = graphics.resize_image(images["quit_button"],0.2)
     logo_image = graphics.resize_image(images["logo"],0.8)
 
-    print(f"[DEBUG] Image resizing took: {time.time() - start:.3f} seconds")
-
 
     def start_game():
         nonlocal running
@@ -44,7 +42,6 @@ def run():
            button.Button(quit_button_image,(center_x, center_y+300), quit_game),
            button.Button(logo_image,(center_x, center_y-300),None)]
 
-    print(f"[DEBUG] Menu ready after: {time.time() - start:.3f} seconds")
 
     while running:
         cfg.CLOCK.tick(cfg.FPS) # Tick at the desired framerate

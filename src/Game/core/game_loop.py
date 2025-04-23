@@ -2,6 +2,7 @@ import pygame
 from game.assets import config as cfg
 from game.assets.graphics import images
 from game.systems import input
+from game.objects import grid,tile
 
 def run():
     running = True
@@ -28,9 +29,16 @@ def run():
         if input.check_for_esc():
             go_back_to_menu()
 
+        
 
 
         cfg.DISPLAY.fill((35,35,35)) # Fill the display with a color (grey)
+
+        game_grid = grid.create_grid()
+
+        grid.draw_grid(game_grid,cfg.DISPLAY)
+
+
         pygame.display.flip() # Flip the display (Render everything)
     
     return should_quit
