@@ -16,8 +16,8 @@ def create_grid():
 
     assign_neighbors(tiles, cfg.GRID_WIDTH, cfg.GRID_HEIGHT)
     
-
     return tiles
+
 
 def draw_grid(tiles:list[Tile], surface):
     for tile in tiles:

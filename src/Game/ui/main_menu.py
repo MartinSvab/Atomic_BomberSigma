@@ -15,8 +15,6 @@ center_y = cfg.DISPLAY.get_height() // 2
 
 
 def run():
-    start = time.time()
-
     running = True # If running is false, it ends the loop, and the run() function returns should_quit, 
     should_quit = False # to say to launch.py whether it should progress to the game loop or exit
     

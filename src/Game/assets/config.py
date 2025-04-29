@@ -23,3 +23,14 @@ BOARD_HEIGHT = TILE_SIZE * GRID_HEIGHT #defined in pixels
 GRID_X_POS = (SCREEN_WIDTH - BOARD_WIDTH) / 2 #pixels!
 GRID_Y_POS = (SCREEN_HEIGHT - BOARD_HEIGHT) / 2 #YAYY PIXELS
 
+# Local settings
+LOCAL_PLAYERS = 1
+
+MOVEMENT_KEYS = [
+    [
+        pygame.K_d, # Right
+        pygame.K_s, # Down
+        pygame.K_a, # Left
+        pygame.K_w  # Up
+    ]
+]
