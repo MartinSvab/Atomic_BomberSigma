@@ -1,16 +1,8 @@
 import pygame
-import sys
-import time
 from game.assets import config as cfg
 from game.assets import graphics
 from game.systems import input
-from game.ui import button
-
-center_x = cfg.DISPLAY.get_width() // 2
-center_y = cfg.DISPLAY.get_height() // 2
-
-
-
+from game.ui import button, options_menu
 
 
 
@@ -21,6 +13,7 @@ def run():
     images = graphics.images
 
     play_button_image = graphics.resize_image(images["play_button"],0.2)
+    options_button_image = graphics.resize_image(images["options_button"],0.2)
     quit_button_image = graphics.resize_image(images["quit_button"],0.2)
     logo_image = graphics.resize_image(images["logo"],0.8)
 
@@ -35,10 +28,16 @@ def run():
         nonlocal should_quit
         should_quit = True
 
+    def open_options():
+        quit_from_options = options_menu.run()
+        if quit_from_options:
+            quit_game()
+
     
-    buttons = [button.Button(play_button_image,(center_x, center_y), start_game),
-           button.Button(quit_button_image,(center_x, center_y+300), quit_game),
-           button.Button(logo_image,(center_x, center_y-300),None)]
+    buttons = [button.Button(play_button_image,(cfg.DISPLAY_CENTER_X, cfg.DISPLAY_CENTER_Y), start_game),
+               button.Button(options_button_image,(cfg.DISPLAY_CENTER_X, cfg.DISPLAY_CENTER_Y + 150), open_options),
+           button.Button(quit_button_image,(cfg.DISPLAY_CENTER_X, cfg.DISPLAY_CENTER_Y + 300), quit_game),
+           button.Button(logo_image,(cfg.DISPLAY_CENTER_X, cfg.DISPLAY_CENTER_Y-300),None)]
 
 
     while running:
@@ -49,6 +48,8 @@ def run():
             quit_game()
 
         
+        #================RENDERING================
+
         
         cfg.DISPLAY.fill((35,35,35)) # Fill the display with a color (grey)
 

@@ -2,11 +2,12 @@ import pygame
 from game.assets import graphics
 
 class Button:
-    def __init__(self, image, pos,action=None):
+    def __init__(self, image, pos,action=None, label=None):
         self.original_image = image
         self.image = self.original_image
         
         self.rect = self.image.get_rect(center=pos)
+        self.label = label
         self.action = action
         self.hovered = False
 

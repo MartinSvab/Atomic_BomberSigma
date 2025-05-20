@@ -20,7 +20,7 @@ def check_for_esc():
             return True
     return False
 
-def check_for_input():
+def check_for_movement_input():
     for event in _event_list:
         if event in MOVEMENT_KEYS:
             movement.handle_movement(event)

@@ -26,7 +26,7 @@ class Player:
 def create_player(pos, grid_pos, hue):
         return Player(
             pos,
-            grid_pos,
+            grid_pos,   
             hue
         )
     

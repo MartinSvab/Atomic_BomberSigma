@@ -26,10 +26,7 @@ def run():
     player_list = []
     for p in range(cfg.LOCAL_PLAYERS):
         random_hue = random.uniform(0,1)
-
         random_tile = game_grid[random.randint(0,len(game_grid) - 1)]
-        
-
         player_list.append(player.create_player(random_tile.pos, random_tile.grid_pos, random_hue))
 
 
@@ -43,17 +40,15 @@ def run():
         if input.check_for_esc():
             go_back_to_menu()
 
-        
-
 
         cfg.DISPLAY.fill((35,35,35)) # Fill the display with a color (grey)
 
 
         grid.draw_grid(game_grid,cfg.DISPLAY) # Display grid
 
-        for p in range(cfg.LOCAL_PLAYERS):
-            player_list[p].draw(cfg.DISPLAY)
-
+        for p in range(cfg.LOCAL_PLAYERS): 
+            player_list[p].draw(cfg.DISPLAY) # Draws players
+            input.check_for_movement_input() # Checks for movement for each player
 
         pygame.display.flip() # Flip the display (Render everything)
     
