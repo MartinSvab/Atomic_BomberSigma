@@ -20,7 +20,15 @@ def check_for_esc():
             return True
     return False
 
-def check_for_movement_input():
-    for event in _event_list:
-        if event in MOVEMENT_KEYS:
-            movement.handle_movement(event)
+def check_for_movement_input(player):
+    keys = pygame.key.get_pressed()
+    binds = MOVEMENT_KEYS[0]  # Only 1 player for now
+
+    if keys[binds[0]]:  # Right
+        movement.handle_movement(player, (1, 0))
+    elif keys[binds[1]]:  # Down
+        movement.handle_movement(player, (0, 1))
+    elif keys[binds[2]]:  # Left
+        movement.handle_movement(player, (-1, 0))
+    elif keys[binds[3]]:  # Up
+        movement.handle_movement(player, (0, -1))

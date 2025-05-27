@@ -1,4 +1,5 @@
 import pygame
+from game.assets.keybinds import keybinds
 import game.assets.config as cfg
 from game.assets import graphics
 from game.systems import input 
@@ -23,10 +24,12 @@ def run():
         nonlocal should_quit
         should_quit = True
 
+    def rebind_key(action, new_key, button):
+        keybinds[action] = new_key
+        button.set_label(pygame.key.name(new_key).upper())
 
 
-    buttons = [button.Button(return_button_image, (0 + return_button_image.get_width()/2, 0 + return_button_image.get_height()/2), return_to_main_menu),
-               button.Button()]
+    buttons = [button.Button(return_button_image, (0 + return_button_image.get_width()/2, 0 + return_button_image.get_height()/2), return_to_main_menu),]
 
     while in_menu:
         cfg.CLOCK.tick(cfg.FPS) # Tick at the desired framerate
