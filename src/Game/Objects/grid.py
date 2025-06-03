@@ -1,5 +1,6 @@
 from game.objects.tile import Tile
 from game.assets import config as cfg
+import random
 
 
 def create_grid():
@@ -10,8 +11,10 @@ def create_grid():
     for row in range(cfg.GRID_HEIGHT):
         for col in range(cfg.GRID_WIDTH):
             x = col * cfg.TILE_SIZE + x_offset
-            y = row * cfg.TILE_SIZE + y_offset
-            tile = Tile((col, row), (x, y))
+            y = row * cfg.TILE_SIZE + y_offset   # Creates the tile on the grid
+
+            is_obstacle = random.random() < cfg.TILE_OBSTACLE_CHANCE # Decides if tile has an obstacle
+            tile = Tile((col, row), (x, y), obstacle=is_obstacle) 
             tiles.append(tile)
 
     assign_neighbors(tiles, cfg.GRID_WIDTH, cfg.GRID_HEIGHT)

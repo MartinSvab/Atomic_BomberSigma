@@ -1,6 +1,6 @@
 from game.assets import config as cfg
 
-def handle_movement(player, direction):
+def handle_movement(player, direction, game_grid):
     if player.is_moving:
         return  # Ignore if currently moving
 
@@ -8,10 +8,16 @@ def handle_movement(player, direction):
     new_x = player.grid_pos[0] + dx
     new_y = player.grid_pos[1] + dy
 
-    if 0 <= new_x < cfg.GRID_WIDTH and 0 <= new_y < cfg.GRID_HEIGHT:
-        player.grid_pos = (new_x, new_y)
-        player.target_pos = (
-            new_x * cfg.TILE_SIZE + cfg.GRID_X_POS,
-            new_y * cfg.TILE_SIZE + cfg.GRID_Y_POS
-        )
-        player.moving = True
+    if not (0 <= new_x < cfg.GRID_WIDTH and 0 <= new_y < cfg.GRID_HEIGHT):
+        return
+
+    
+    tile_index = new_y * cfg.GRID_WIDTH + new_x # Move y times in 1d grid and take x steps
+    target_tile = game_grid[tile_index]  
+
+    if target_tile.obstacle:
+        return  # Block movement into obstacle tile
+    
+    player.grid_pos = (new_x, new_y)
+    player.target_pos = (target_tile.pos)
+    player.is_moving = True

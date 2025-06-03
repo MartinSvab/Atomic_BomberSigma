@@ -48,7 +48,7 @@ def run():
 
         for p in range(cfg.LOCAL_PLAYERS): 
             player_list[p].draw(cfg.DISPLAY) # Draws players
-            input.check_for_movement_input(player_list[p]) # Checks for movement for each player
+            input.check_for_movement_input(player_list[p], game_grid) # Checks for movement for each player
 
         pygame.display.flip() # Flip the display (Render everything)
     

@@ -36,3 +36,8 @@ MOVEMENT_KEYS = [
         pygame.K_w  # Up
     ]
 ]
+
+
+
+#Miscellanesus
+TILE_OBSTACLE_CHANCE = 0.2
