@@ -23,7 +23,7 @@ class Bomb:
     _explosion_vertical: pygame.Surface = None
 
     def __init__(self, tile: tile_module.Tile, grid_pos: Tuple[int, int],
-                 radius: int = 2, fuse_frames: int = 120) -> None:
+                 radius: int = 1, fuse_frames: int = 120) -> None:
         self.tile = tile
         self.grid_pos = grid_pos
         self.radius = radius
@@ -42,7 +42,7 @@ class Bomb:
     def _load_assets(cls) -> None:
         images = graphics.images
         # Bomb animation frames
-        for i in range(1, 5):
+        for i in range(1, 6):
             img_key = f"bomb_stage_{i}"
             if img_key in images:
                 ratio = cfg.TILE_SIZE / images[img_key].get_width()
@@ -91,8 +91,7 @@ class Bomb:
             surface.blit(image, self.tile.pos)
         else:
             # centre explosion
-            if Bomb._explosion_horizontal:
-                surface.blit(Bomb._explosion_horizontal, self.tile.pos)
+            surface.blit(Bomb._stage_images[4], self.tile.pos)
             # horizontal arms
             for dx in [1, -1]:
                 for step in range(1, self.radius + 1):
