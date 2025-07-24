@@ -47,8 +47,10 @@ def run():
 
         # handle players
         for p in range(cfg.LOCAL_PLAYERS):
-            input.check_for_movement_input(player_list[p], game_grid)
-            bomb_logic.handle_bomb_input(player_list[p], bombs, game_grid)
+            player_state = getattr(player_list[p],"state")
+            if(player_state != "dead"):
+                input.check_for_movement_input(player_list[p], game_grid)
+                bomb_logic.handle_bomb_input(player_list[p], bombs, game_grid)
             player_list[p].draw(cfg.DISPLAY)
 
         # update and draw bombs
