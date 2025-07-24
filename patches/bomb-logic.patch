@@ -1,0 +1,330 @@
+From d672466390b83a1ce96f66f8940f9cdea5e54126 Mon Sep 17 00:00:00 2001
+From: svabis <svabis@example.com>
+Date: Thu, 24 Jul 2025 15:48:43 +0000
+Subject: [PATCH] Add bomb logic to allow players to place and explode bombs
+
+---
+ src/Game/Objects/bomb.py       | 196 ++++++++++++++++++++++++++++++++-
+ src/Game/core/game_loop.py     |  27 ++++-
+ src/Game/systems/bomb_logic.py |  70 +++++++++++-
+ 3 files changed, 285 insertions(+), 8 deletions(-)
+
+diff --git a/src/Game/Objects/bomb.py b/src/Game/Objects/bomb.py
+index fc80254..1c62872 100644
+--- a/src/Game/Objects/bomb.py
++++ b/src/Game/Objects/bomb.py
+@@ -1 +1,195 @@
+-pass
+\ No newline at end of file
++"""
++This module defines a simple Bomb class for the Atomic BomberSigma project.
++
++A Bomb is placed on a tile in the grid when a player presses the bomb key.
++The bomb ticks down for a short period (fuse_time) and then explodes,
++affecting its own tile and a number of tiles in the four cardinal directions.
++When it explodes it removes any obstacles on those tiles and marks them as
++exploding so they can be drawn appropriately. After a brief explosion
++animation the bomb cleans itself up.
++"""
++
++import pygame
++from typing import List, Tuple
++
++from game.assets import config as cfg
++from game.assets import graphics
++from game.objects import tile as tile_module
++from game.objects import player as player_module
++
++
++class Bomb:
++    """Represents a bomb placed by a player."""
++
++    # Class-level cached assets for all bombs
++    _stage_images: List[pygame.Surface] = []
++    _explosion_horizontal: pygame.Surface = None
++    _explosion_vertical: pygame.Surface = None
++
++    def __init__(self, tile: tile_module.Tile, grid_pos: Tuple[int, int],
++                 radius: int = 2, fuse_frames: int = 120) -> None:
++        """
++        Create a Bomb.
++
++        Args:
++            tile: The tile on which the bomb is placed.
++            grid_pos: (col,row) grid position of the bomb.
++            radius: How many tiles the explosion should propagate in each direction.
++            fuse_frames: How many game loop frames before the bomb explodes.
++        """
++        self.tile = tile
++        self.grid_pos = grid_pos
++        self.radius = radius
++        self.fuse_frames = fuse_frames
++        self._frame_counter = 0
++        self.exploded = False
++        self.explosion_frames_remaining = 30  # frames to display explosion
++        self.explosion_tiles: List[tile_module.Tile] = []
++
++        # Mark the tile as containing a bomb
++        self.tile.bomb = True
++
++        # Load and cache bomb images if needed
++        if not Bomb._stage_images:
++            Bomb._load_assets()
++
++    @classmethod
++    def _load_assets(cls) -> None:
++        """Load and cache images for bomb stages and explosions."""
++        images = graphics.images
++        # Pre-scale the bomb animation frames to the tile size
++        for i in range(1, 5):
++            img_key = f"bomb_stage_{i}"
++            if img_key in images:
++                ratio = cfg.TILE_SIZE / images[img_key].get_width()
++                cls._stage_images.append(
++                    graphics.resize_image(images[img_key], ratio)
++                )
++        # Pre-scale explosion graphics for horizontal and vertical arms
++        hor_key = "bomb_explosion_horizontal"
++        ver_key = "bomb_explosion_vertical"
++        if hor_key in images:
++            ratio_h = cfg.TILE_SIZE / images[hor_key].get_width()
++            cls._explosion_horizontal = graphics.resize_image(images[hor_key], ratio_h)
++        if ver_key in images:
++            ratio_v = cfg.TILE_SIZE / images[ver_key].get_width()
++            cls._explosion_vertical = graphics.resize_image(images[ver_key], ratio_v)
++
++    def update(self, game_grid: List[tile_module.Tile], players: List[player_module.Player]) -> bool:
++        """
++        Update the bomb state. Handles ticking the fuse and managing the explosion.
++
++        Args:
++            game_grid: The list of tiles representing the game board.
++            players: The list of players currently in the game.
++
++        Returns:
++            True if the bomb has finished exploding and should be removed, otherwise False.
++        """
++        if not self.exploded:
++            # Increment the fuse counter until it reaches fuse_frames
++            self._frame_counter += 1
++            if self._frame_counter >= self.fuse_frames:
++                self._explode(game_grid, players)
++        else:
++            # After explosion, count down frames to clear explosion markers
++            self.explosion_frames_remaining -= 1
++            if self.explosion_frames_remaining <= 0:
++                # Cleanup: reset exploding flags and bomb marker
++                for t in self.explosion_tiles:
++                    t.exploding = False
++                self.tile.bomb = False
++                return True
++        return False
++
++    def draw(self, surface: pygame.Surface) -> None:
++        """
++        Draw the bomb or its explosion on the given surface.
++
++        Args:
++            surface: The Pygame surface to draw onto.
++        """
++        if not self.exploded:
++            # Determine which stage image to draw based on the fuse timer
++            if self.fuse_frames > 0 and Bomb._stage_images:
++                stage_index = min(len(Bomb._stage_images) - 1,
++                                  (self._frame_counter * len(Bomb._stage_images)) // self.fuse_frames)
++            else:
++                stage_index = 0
++            image = Bomb._stage_images[stage_index]
++            surface.blit(image, self.tile.pos)
++        else:
++            # Draw the explosion centre
++            center_img = Bomb._explosion_horizontal  # any explosion sprite works for centre
++            if center_img:
++                surface.blit(center_img, self.tile.pos)
++            # Draw horizontal arms
++            for dx in [1, -1]:
++                for step in range(1, self.radius + 1):
++                    nx = self.grid_pos[0] + dx * step
++                    ny = self.grid_pos[1]
++                    if not (0 <= nx < cfg.GRID_WIDTH):
++                        break
++                    pos = (self.tile.pos[0] + cfg.TILE_SIZE * dx * step, self.tile.pos[1])
++                    if Bomb._explosion_horizontal:
++                        surface.blit(Bomb._explosion_horizontal, pos)
++            # Draw vertical arms
++            for dy in [1, -1]:
++                for step in range(1, self.radius + 1):
++                    nx = self.grid_pos[0]
++                    ny = self.grid_pos[1] + dy * step
++                    if not (0 <= ny < cfg.GRID_HEIGHT):
++                        break
++                    pos = (self.tile.pos[0], self.tile.pos[1] + cfg.TILE_SIZE * dy * step)
++                    if Bomb._explosion_vertical:
++                        surface.blit(Bomb._explosion_vertical, pos)
++
++    def _explode(self, game_grid: List[tile_module.Tile], players: List[player_module.Player]) -> None:
++        """
++        Handle the bomb explosion: mark tiles, destroy obstacles and kill players if necessary.
++
++        Args:
++            game_grid: The list of tiles representing the game board.
++            players: The list of players currently in the game.
++        """
++        self.exploded = True
++        # Always include the bomb's own tile
++        self.explosion_tiles.append(self.tile)
++        self.tile.exploding = True
++
++        # Propagate the explosion in the four cardinal directions
++        for dx, dy in [(1, 0), (0, 1), (-1, 0), (0, -1)]:
++            for step in range(1, self.radius + 1):
++                nx = self.grid_pos[0] + dx * step
++                ny = self.grid_pos[1] + dy * step
++                # Stop if out of bounds
++                if not (0 <= nx < cfg.GRID_WIDTH and 0 <= ny < cfg.GRID_HEIGHT):
++                    break
++                index = ny * cfg.GRID_WIDTH + nx
++                neighbour_tile = game_grid[index]
++                self.explosion_tiles.append(neighbour_tile)
++                neighbour_tile.exploding = True
++                # If obstacle encountered, destroy it and stop propagation further in this direction
++                if neighbour_tile.obstacle:
++                    neighbour_tile.obstacle = False
++                    neighbour_tile.sprite = tile_module.Tile.empty_tile_sprite
++                    break
++
++        # Check players for damage
++        for p in players:
++            if getattr(p, "state", None) == "dead":
++                continue
++            for t in self.explosion_tiles:
++                if p.grid_pos == t.grid_pos:
++                    try:
++                        from game.objects.player import states as player_states
++                        p.state = "dead"
++                        p.sprite = player_states["dead"]
++                    except Exception:
++                        pass
++                    break
+diff --git a/src/game/core/game_loop.py b/src/game/core/game_loop.py
+index d1ae60f..969d065 100644
+--- a/src/game/core/game_loop.py
++++ b/src/game/core/game_loop.py
+@@ -3,6 +3,7 @@
+ from game.assets import config as cfg
+ from game.assets.graphics import images
+ from game.systems import input
+ from game.objects import grid, player
++from game.systems import bomb_logic
+ import random
+ 
+ def run():
+@@ -20,7 +21,10 @@ def run():
+         should_quit = True
+ 
+ 
+-    game_grid = grid.create_grid() # create grid
++    game_grid = grid.create_grid()
++
++    # Prepare a list to hold bombs placed during the game
++    bombs: list = []
+ 
+ 
+     player_list = []
+@@ -44,12 +48,23 @@ def run():
+         cfg.DISPLAY.fill((35,35,35))
+ 
+ 
+-        grid.draw_grid(game_grid,cfg.DISPLAY) # Display grid
++        grid.draw_grid(game_grid, cfg.DISPLAY)
++
++        # Handle player inputs and drawing
++        for p in range(cfg.LOCAL_PLAYERS):
++            input.check_for_movement_input(player_list[p], game_grid)
++            bomb_logic.handle_bomb_input(player_list[p], bombs, game_grid)
++            player_list[p].draw(cfg.DISPLAY)
++
++        # Update bombs and draw them
++        bomb_logic.update_bombs(bombs, game_grid, player_list)
++        bomb_logic.draw_bombs(bombs, cfg.DISPLAY)
+ 
+-        for p in range(cfg.LOCAL_PLAYERS): 
+-            player_list[p].draw(cfg.DISPLAY)
+-            input.check_for_movement_input(player_list[p], game_grid)
++        pygame.display.flip()
+ 
+-        pygame.display.flip()
++        pygame.display.flip()
+     
+     return should_quit
+diff --git a/src/Game/systems/bomb_logic.py b/src/Game/systems/bomb_logic.py
+index fc80254..8d45e0d 100644
+--- a/src/Game/systems/bomb_logic.py
++++ b/src/Game/systems/bomb_logic.py
+@@ -1 +1,69 @@
+-pass
++"""
++Bomb logic for Atomic BomberSigma.
++
++This module contains helper functions to handle bomb input, update active
++bombs and draw them. It delegates the details of the Bomb behaviour to
++the `Bomb` class defined in `game.objects.bomb`.
++"""
++
++import pygame
++from typing import List
++
++from game.assets import keybinds
++from game.assets import config as cfg
++from game.objects.bomb import Bomb
++from game.systems import input as input_sys
++
++
++def handle_bomb_input(player, bombs: List[Bomb], game_grid) -> None:
++    """
++    Check the event queue for bomb placement input and place a bomb if possible.
++
++    Args:
++        player: The player attempting to place a bomb.
++        bombs: A list of currently active bombs.
++        game_grid: The grid of tiles representing the board.
++    """
++    for event in input_sys._event_list:
++        if event.type == pygame.KEYDOWN and event.key == keybinds.keybinds["place_bomb"]:
++            col, row = player.grid_pos
++            tile_index = row * cfg.GRID_WIDTH + col
++            tile = game_grid[tile_index]
++            if not tile.bomb:
++                bombs.append(Bomb(tile, (col, row)))
++            break
++
++
++def update_bombs(bombs: List[Bomb], game_grid, players) -> None:
++    """
++    Update all bombs and remove those that have finished exploding.
++
++    Args:
++        bombs: List of active bombs.
++        game_grid: List of tiles forming the game board.
++        players: List of players in the current game.
++    """
++    finished = []
++    for bomb in bombs:
++        if bomb.update(game_grid, players):
++            finished.append(bomb)
++    for b in finished:
++        bombs.remove(b)
++
++
++def draw_bombs(bombs: List[Bomb], surface) -> None:
++    """
++    Draw all active bombs and their explosions.
++
++    Args:
++        bombs: List of active bombs.
++        surface: Surface on which to draw.
++    """
++    for bomb in bombs:
++        bomb.draw(surface)
+-- 
+2.39.5
