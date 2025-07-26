@@ -143,7 +143,7 @@ class Bomb:
                     try:
                         from game.objects.player import states as player_states
                         p.state = "dead"
-                        p.sprite = player_states["dead"]
+                        p.update_sprite()    
                     except Exception:
                         pass
                     break

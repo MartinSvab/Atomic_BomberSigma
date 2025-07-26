@@ -4,6 +4,7 @@ from game.assets.graphics import images
 from game.systems import input
 from game.objects import grid, player
 from game.systems import bomb_logic
+from game.ui import player_hud
 import random
 
 def run():
@@ -20,9 +21,11 @@ def run():
         nonlocal should_quit
         should_quit = True
 
-    game_grid = grid.create_grid()  # create grid
+    #Create grid
+    game_grid = grid.create_grid()
     bombs: list = []
 
+    #Create players
     player_list = []
     for p in range(cfg.LOCAL_PLAYERS):
         random_hue = random.uniform(0, 1)
@@ -30,6 +33,7 @@ def run():
         player_list.append(
             player.create_player(random_tile.pos, random_tile.grid_pos, random_hue)
         )
+        player_list[p].hud = player_hud.Player_hud((cfg.PLAYER_HUD_MARGIN,cfg.PLAYER_HUD_MARGIN),player_list[p])
 
     while running:
         cfg.CLOCK.tick(cfg.FPS)
@@ -52,6 +56,7 @@ def run():
                 input.check_for_movement_input(player_list[p], game_grid)
                 bomb_logic.handle_bomb_input(player_list[p], bombs, game_grid)
             player_list[p].draw(cfg.DISPLAY)
+            
 
         # update and draw bombs
         bomb_logic.update_bombs(bombs, game_grid, player_list)

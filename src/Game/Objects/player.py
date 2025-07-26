@@ -3,10 +3,8 @@ from game.assets import config as cfg
 import time
 
 states = {
-    "stationary": resize_image(images["player_default"],
+    "alive": resize_image(images["player_default"],
                                cfg.TILE_SIZE/ images["player_default"].get_width()),
-    "moving": resize_image(images["player_moving"],
-                           cfg.TILE_SIZE/ images["player_moving"].get_width()),
     "dead" : resize_image(images["player_dead"], 
                           cfg.TILE_SIZE/ images["player_dead"].get_width())
 }
@@ -14,14 +12,20 @@ states = {
 
 
 class Player:
+    """Represents the player's in-game on-board sprite"""
     def __init__(self, pos, grid_pos, hue):
-        self.state = "stationary"
-        self.sprite = shift_hue(states[self.state],hue)
+        self.state = "alive"
+        self.hue = hue
+        self.sprite = shift_hue(states["alive"],hue)
         self.pos = pos
         self.grid_pos = grid_pos
         self.target_pos = pos  # where to move toward
         self.is_moving = False
         self.move_speed = 8  # pixels per frame (adjust for smoothness)
+        hud = None
+
+    def update_sprite(self):
+        self.sprite = shift_hue(states[self.state], self.hue)
 
     def draw(self, surface):
         if self.is_moving:
@@ -53,6 +57,7 @@ class Player:
                 self.pos = (x, y)
 
         surface.blit(self.sprite, self.pos)
+        self.hud.draw(surface)
 
 
 
