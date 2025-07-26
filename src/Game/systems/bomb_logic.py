@@ -17,12 +17,13 @@ def handle_bomb_input(player, bombs: List[Bomb], game_grid) -> None:
     Check the event queue for a space‑bar press and place a bomb on the player's tile.
     """
     for event in input_sys._event_list:
-        if event.type == pygame.KEYDOWN and event.key == keybinds.keybinds["place_bomb"]:
+        if event.type == pygame.KEYDOWN and event.key == keybinds.keybinds["place_bomb"] and player.can_place_bomb():
             col, row = player.grid_pos
             tile_index = row * cfg.GRID_WIDTH + col
             tile = game_grid[tile_index]
             if not tile.bomb:
                 bombs.append(Bomb(tile, (col, row)))
+                player.last_bomb_time = pygame.time.get_ticks()
             break
 
 def update_bombs(bombs: List[Bomb], game_grid, players) -> None:

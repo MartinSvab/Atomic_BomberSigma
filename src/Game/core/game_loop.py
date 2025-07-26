@@ -49,7 +49,7 @@ def run():
 
         grid.draw_grid(game_grid, cfg.DISPLAY)
 
-        # handle players
+        # handle everything player related
         for p in range(cfg.LOCAL_PLAYERS):
             player_state = getattr(player_list[p],"state")
             if(player_state != "dead"):

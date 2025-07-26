@@ -39,6 +39,7 @@ MOVEMENT_KEYS = [
     ]
 ]
 
+DEFAULT_BOMB_COOLDOWN = 5000 #In ms
 
 
 #Miscellanesus
