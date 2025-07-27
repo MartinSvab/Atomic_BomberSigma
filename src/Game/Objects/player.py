@@ -14,7 +14,7 @@ states = {
 
 class Player:
     """Represents the player's in-game on-board sprite"""
-    def __init__(self, pos, grid_pos, hue):
+    def __init__(self, pos, grid_pos, hue, player_index):
         self.state = "alive"
         self.hue = hue
         self.sprite = shift_hue(states["alive"],hue)
@@ -24,6 +24,7 @@ class Player:
         self.is_moving = False
         self.hud = None
         self.last_bomb_time = 0  #Last tick a bomb was placed
+        self.player_index = player_index
 
 
         #Stats
@@ -72,10 +73,11 @@ class Player:
 
 
 
-def create_player(pos, grid_pos, hue):
+def create_player(pos, grid_pos, hue, player_index):
         return Player(
             pos,
             grid_pos,   
-            hue
+            hue,
+            player_index
         )
     

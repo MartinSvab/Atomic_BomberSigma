@@ -141,7 +141,6 @@ class Bomb:
             for t in self.explosion_tiles:
                 if p.grid_pos == t.grid_pos:
                     try:
-                        from game.objects.player import states as player_states
                         p.state = "dead"
                         p.update_sprite()    
                     except Exception:

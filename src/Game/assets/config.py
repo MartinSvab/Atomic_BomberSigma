@@ -29,16 +29,6 @@ PLAYER_HUD_MARGIN = 20
 
 # Local settings
 LOCAL_PLAYERS = 1
-
-MOVEMENT_KEYS = [
-    [
-        pygame.K_d, # Right
-        pygame.K_s, # Down
-        pygame.K_a, # Left
-        pygame.K_w  # Up
-    ]
-]
-
 DEFAULT_BOMB_COOLDOWN = 5000 #In ms
 
 

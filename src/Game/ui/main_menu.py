@@ -47,21 +47,20 @@ def run():
         if input.check_for_quit(): # Check for quitting the game entirely
             quit_game()
 
+
         
         #================RENDERING================
 
         
         cfg.DISPLAY.fill((35,35,35)) # Fill the display with a color (grey)
 
-
         
         
         for btn in buttons:       
             btn.draw(cfg.DISPLAY) # Draw buttons
             if btn.is_clicked():
-                btn.perform_action() # Perform the function that the button is given when clicked
-            
-        
+                btn.perform_action()
+
         pygame.display.flip() # Flip the display (Render everything)
 
 

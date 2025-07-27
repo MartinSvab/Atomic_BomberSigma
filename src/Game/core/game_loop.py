@@ -31,7 +31,7 @@ def run():
         random_hue = random.uniform(0, 1)
         random_tile = game_grid[random.randint(0, len(game_grid) - 1)]
         player_list.append(
-            player.create_player(random_tile.pos, random_tile.grid_pos, random_hue)
+            player.create_player(random_tile.pos, random_tile.grid_pos, random_hue, p)
         )
         player_list[p].hud = player_hud.Player_hud((cfg.PLAYER_HUD_MARGIN,cfg.PLAYER_HUD_MARGIN),player_list[p])
 

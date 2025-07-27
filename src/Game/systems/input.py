@@ -1,6 +1,6 @@
 import pygame
 from game.systems import movement
-from game.assets.config import MOVEMENT_KEYS
+from game.assets.keybinds import keybinds
 
 _event_list = []
 
@@ -22,7 +22,7 @@ def check_for_esc():
 
 def check_for_movement_input(player, game_grid):
     keys = pygame.key.get_pressed()
-    binds = MOVEMENT_KEYS[0]  # Only 1 player for now
+    binds = keybinds[0]  # Only 1 player for now
 
     if keys[binds[0]]:  # Right
         movement.handle_movement(player, (1, 0), game_grid)
