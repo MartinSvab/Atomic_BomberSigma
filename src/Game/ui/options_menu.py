@@ -7,83 +7,112 @@ from game.ui import button
 
 font = pygame.font.SysFont(None, 24)
 
-
 def run():
-    in_menu = True # Tells us whether player is in menu or not (used for exiting out of it)
-    should_quit = False # Gets returned, if true, exits the game from the main menu, if not, proceeds to menu normally
+    in_menu = True
+    should_quit = False
+    player_count = cfg.LOCAL_PLAYERS
 
     images = graphics.images
     return_button_image = graphics.resize_image(images["return_button"],1)
-    player_count = cfg.LOCAL_PLAYERS
+
+    kb = {  # Keybinding icons
+        "left":  images["keybind_left"],
+        "up":    images["keybind_up"],
+        "right": images["keybind_right"],
+        "down":  images["keybind_down"]
+    }
+
+    directions = ["left", "up", "right", "down"]
+    editing_bind = None  # (index, direction)
+
+    bind_buttons = []
+    for idx, direction in enumerate(directions):
+        img = kb[direction]
+        pos = (200 + idx * 150, 400)  # layout horizontally for now
+
+        def make_action(i, d):
+            def action():
+                nonlocal editing_bind
+                editing_bind = (0, d)  # (player_index, direction)
+            return action
+
+        bind_buttons.append(
+            button.Button(img, pos, make_action(idx, direction), label=direction)
+        )
 
     def return_to_main_menu():
         nonlocal in_menu
         in_menu = False
 
     def quit_game():
-        nonlocal in_menu
+        nonlocal in_menu, should_quit
         in_menu = False 
-        nonlocal should_quit
         should_quit = True
 
     def increase_player_count():
         nonlocal player_count
-        if player_count < 4 and player_count > 0:
+        if player_count < 4:
             player_count += 1
     
     def decrease_player_count():
         nonlocal player_count
-        if player_count < 5 and player_count > 1:
+        if player_count > 1:
             player_count -= 1
 
-
-    _keybinding_pos = ((cfg.PLAYER_HUD_MARGIN), (cfg.DISPLAY.get_height()*0.5))
-    _keybinding_area = (((cfg.DISPLAY.get_width()/2)-(cfg.PLAYER_HUD_MARGIN*2)),(cfg.DISPLAY.get_height()*0.5 - cfg.PLAYER_HUD_MARGIN))
-
-
     buttons = [
-        button.Button(return_button_image, (0 + return_button_image.get_width()/2, 0 + return_button_image.get_height()/2), return_to_main_menu),
-        button.Button(images["plus_button"], (1000,640),increase_player_count,None),
-        button.Button(images["minus_button"], (1100, 640), decrease_player_count, None)
-               ]
+        button.Button(return_button_image,
+                      (0 + return_button_image.get_width()/2,
+                       0 + return_button_image.get_height()/2),
+                      return_to_main_menu),
+        button.Button(images["plus_button"], (1000,640), increase_player_count),
+        button.Button(images["minus_button"], (1100,640), decrease_player_count)
+    ] + bind_buttons
 
     while in_menu:
-        cfg.CLOCK.tick(cfg.FPS) # Tick at the desired framerate
-        input.update_event_queue() # Updates event queue
+        cfg.CLOCK.tick(cfg.FPS)
+        input.update_event_queue()
 
-        if input.check_for_quit(): # Check for quitting the game entirely
-           quit_game()
+        for event in input._event_list:
+            if event.type == pygame.QUIT:
+                quit_game()
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and editing_bind is None:
+                return_to_main_menu()
 
-        if input.check_for_esc():
-            return_to_main_menu()
+            # rebinding
+            if editing_bind is not None and event.type == pygame.KEYDOWN:
+                p_i, direction = editing_bind
+                idx = directions.index(direction)
+                keybinds[p_i][idx] = event.key  # store new keycode
 
-        player_count_text = font.render(str(player_count),True,"red")
+                # update label text on the correct button
+                for b in bind_buttons:
+                    if b.label == direction or b.label == "...":
+                        b.label = pygame.key.name(event.key)
+                editing_bind = None
 
-        #================RENDERING================
-                   
-        cfg.DISPLAY.fill((35,35,35)) # Fill the display with a color (grey)
+        # ================== RENDER ==================
+        cfg.DISPLAY.fill((35,35,35))
 
-        #All buttons get rendered
         for btn in buttons:
-            btn.draw(cfg.DISPLAY) # Draw buttons
+            btn.draw(cfg.DISPLAY)
             if btn.is_clicked():
+                if btn.label in directions:  # only set to "..." when valid
+                    btn.label = "..."
                 btn.perform_action()
-        
-        
-        cfg.DISPLAY.blit(player_count_text, (650,750))
 
-        #Draws keybinds, according to number of players.
-        pygame.draw.rect(cfg.DISPLAY, "black", (_keybinding_pos, _keybinding_area))
-        
-        for i in range(player_count):
-            if (i % 2): #Left side
-                if (i < 1): #Up
-                    keybinds_center_point = (_keybinding_pos + _keybinding_area[0]/0.25, _keybinding_pos + _keybinding_area[1]/0.25)
+            # draw key name under button
+            text_label = btn.label if btn.label == "..." else ""
+            if btn.label in directions:
+                idx = directions.index(btn.label)
+                text_label = pygame.key.name(keybinds[0][idx])
 
+            if text_label:
+                text_surf = font.render(text_label, True, "white")
+                cfg.DISPLAY.blit(text_surf,
+                    (btn.rect.centerx - text_surf.get_width()/2,
+                     btn.rect.bottom + 5))
 
-
-        pygame.display.flip() # Flip the display (Render everything)
-
+        pygame.display.flip()
 
     cfg.LOCAL_PLAYERS = player_count
     return should_quit
