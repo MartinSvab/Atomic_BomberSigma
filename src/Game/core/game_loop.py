@@ -33,7 +33,7 @@ def run():
         player_list.append(
             player.create_player(random_tile.pos, random_tile.grid_pos, random_hue, p)
         )
-        player_list[p].hud = player_hud.Player_hud((cfg.PLAYER_HUD_MARGIN,cfg.PLAYER_HUD_MARGIN),player_list[p])
+        player_list[p].hud = player_hud.Player_hud((cfg.PLAYER_HUD_MARGIN,cfg.PLAYER_HUD_MARGIN + (p * 250)),player_list[p])
 
     while running:
         cfg.CLOCK.tick(cfg.FPS)

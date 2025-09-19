@@ -22,7 +22,7 @@ def check_for_esc():
 
 def check_for_movement_input(player, game_grid):
     keys = pygame.key.get_pressed()
-    binds = keybinds[0]  # Only 1 player for now
+    binds = keybinds[player.player_index]  # Only 1 player for now
 
     if keys[binds[0]]:  # Left
         movement.handle_movement(player, (-1, 0), game_grid)
