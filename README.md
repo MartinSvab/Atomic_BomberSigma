@@ -9,14 +9,14 @@ Quick start — run it locally
 1.  Install Python (3.8+ recommended) and the required packages:
     
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   pip install pygame numpy   `
+`   pip install pygame numpy   `
 
-1.  Ensure the game asset images are available. The project expects image files to be reachable by the graphics loader (see game/assets/graphics.py) — by default the loader looks for an images folder relative to the package layout, so make sure your repo contains the expected images in the game/images (or adjust the path in game/assets/graphics.py).
+2.  Ensure the game asset images are available. The project expects image files to be reachable by the graphics loader (see game/assets/graphics.py) — by default the loader looks for an images folder relative to the package layout, so make sure your repo contains the expected images in the game/images (or adjust the path in game/assets/graphics.py).
     
-2.  From the repository root run:
+3.  From the repository root run:
     
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   python launch.py   `
+`   python launch.py   `
 
 launch.py initializes assets, shows the main menu and then hands control over to the main game loop.
 
