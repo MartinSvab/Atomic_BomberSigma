@@ -7,12 +7,14 @@ destroying obstacles and killing players caught in its blast.
 """
 
 import pygame
+import random
 from typing import List, Tuple
 
 from game.assets import config as cfg
 from game.assets import graphics
 from game.objects import tile as tile_module
 from game.objects import player as player_module
+from game.objects import powerup as powerup_module
 
 
 class Bomb:
@@ -23,7 +25,7 @@ class Bomb:
     _explosion_vertical: pygame.Surface = None
 
     def __init__(self, tile: tile_module.Tile, grid_pos: Tuple[int, int],
-                 radius: int = 1, fuse_frames: int = 120) -> None:
+                 radius: int = 1, fuse_frames: int = 60) -> None:
         self.tile = tile
         self.grid_pos = grid_pos
         self.radius = radius
@@ -132,6 +134,8 @@ class Bomb:
                 neighbour_tile.exploding = True
                 if neighbour_tile.obstacle:
                     neighbour_tile.obstacle = False
+                    if random.random() < cfg.POWER_UP_DROP_CHANCE:
+                        powerup_module.create_powerup(neighbour_tile)
                     neighbour_tile.sprite = tile_module.Tile.empty_tile_sprite
                     break
         # kill players caught in the blast
