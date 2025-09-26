@@ -37,4 +37,6 @@ DEFAULT_BOMB_COOLDOWN = 3000 #In ms
 
 #Miscellanesus
 TILE_OBSTACLE_CHANCE = 0.2
-POWER_UP_DROP_CHANCE = 1
+POWER_UP_DROP_CHANCE = 1      # % on destroyed obstacle
+SPEED_BOOST_MULTIPLIER = 1.5     # % faster
+SPEED_BOOST_DURATION_MS = 5000   # 5 seconds

@@ -4,6 +4,7 @@ from game.assets.graphics import images
 from game.systems import input
 from game.objects import grid, player
 from game.systems import bomb_logic
+from game.objects import powerup as powerup_module
 from game.ui import player_hud
 import random
 
@@ -48,6 +49,10 @@ def run():
         cfg.DISPLAY.fill((35, 35, 35))
 
         grid.draw_grid(game_grid, cfg.DISPLAY)
+
+        #draw all powerups, update all player effects
+        powerup_module.draw_all(cfg.DISPLAY)
+        powerup_module.update_effects()
 
         # handle everything player related
         for p in range(cfg.LOCAL_PLAYERS):

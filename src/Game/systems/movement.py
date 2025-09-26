@@ -1,4 +1,5 @@
 from game.assets import config as cfg
+from game.objects import powerup as powerup_module
 
 def handle_movement(player, direction, game_grid):
     if player.is_moving:
@@ -21,3 +22,6 @@ def handle_movement(player, direction, game_grid):
     player.grid_pos = (new_x, new_y)
     player.target_pos = (target_tile.pos)
     player.is_moving = True
+
+    if getattr(target_tile, "powerup", None) is not None:
+        powerup_module.apply_and_consume(target_tile.powerup, player)

@@ -5,6 +5,7 @@ from game.assets import graphics
 class Tile:
     empty_tile_sprite = None
     obstacle_tile_sprite = None
+    
 
     def __init__(self, grid_pos, pixel_pos, obstacle=False):
         if Tile.empty_tile_sprite is None:
@@ -25,6 +26,7 @@ class Tile:
         self.grid_pos = grid_pos
         self.pos = pixel_pos
         self.obstacle = obstacle
+        self.powerup = None 
         self.bomb = False
         self.exploding = False
         self.neighbours = [None, None, None, None]

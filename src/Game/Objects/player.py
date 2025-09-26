@@ -3,16 +3,18 @@ from game.assets.graphics import images,shift_hue, resize_image
 from game.assets import config as cfg
 import time
 
+
 states = {
-    "alive": resize_image(images["player_default"],
-                               cfg.TILE_SIZE/ images["player_default"].get_width()),
-    "dead" : resize_image(images["player_dead"], 
-                          cfg.TILE_SIZE/ images["player_dead"].get_width())
+"alive": resize_image(images["player_default"],
+                            cfg.TILE_SIZE/ images["player_default"].get_width()),
+"dead" : resize_image(images["player_dead"], 
+                        cfg.TILE_SIZE/ images["player_dead"].get_width())
 }
 
 
 
 class Player:
+
     """Represents the player's in-game on-board sprite"""
     def __init__(self, pos, grid_pos, hue, player_index):
         self.state = "alive"
