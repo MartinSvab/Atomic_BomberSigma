@@ -1,14 +1,14 @@
+# game/objects/bomb.py
 """
-This module defines a simple Bomb class for the Atomic BomberSigma project.
+Bombs for Atomic BomberSigma.
 
-A Bomb is placed on a tile in the grid when a player presses the bomb key.
-It counts down for a short period and then explodes in a cross pattern,
-destroying obstacles and killing players caught in its blast.
+- Place a bomb on a tile; it ticks for `fuse_frames`, then explodes in a cross.
+- Explosion removes obstacles, can drop powerups, and kills players on affected tiles.
 """
 
 import pygame
-import random
 from typing import List, Tuple
+import random
 
 from game.assets import config as cfg
 from game.assets import graphics
@@ -17,25 +17,36 @@ from game.objects import player as player_module
 from game.objects import powerup as powerup_module
 
 
+# ---- Tunables ---------------------------------------------------------------
+
+DEFAULT_FUSE_FRAMES = 60              # ~1s at 60 FPS
+EXPLOSION_FRAMES = 30                 # how long the explosion graphic lingers
+POWERUP_DROP_CHANCE = 0.25            # 25% chance to drop on destroyed obstacle
+POWERUP_DROP_TABLE = ["speed_boost"]#, "bomb_range_up"]  # effect ids from powerup.SPECS
+
+
 class Bomb:
     """Represents a bomb placed by a player."""
 
     _stage_images: List[pygame.Surface] = []
-    _explosion_horizontal: pygame.Surface = None
-    _explosion_vertical: pygame.Surface = None
+    _explosion_horizontal: pygame.Surface | None = None
+    _explosion_vertical: pygame.Surface | None = None
 
     def __init__(self, tile: tile_module.Tile, grid_pos: Tuple[int, int],
-                 radius: int = 1, fuse_frames: int = 60) -> None:
+                 radius: int = 1, fuse_frames: int = DEFAULT_FUSE_FRAMES) -> None:
         self.tile = tile
         self.grid_pos = grid_pos
         self.radius = radius
         self.fuse_frames = fuse_frames
         self._frame_counter = 0
+
         self.exploded = False
-        self.explosion_frames_remaining = 30
+        self.explosion_frames_remaining = EXPLOSION_FRAMES
         self.explosion_tiles: List[tile_module.Tile] = []
+
         # Mark the tile as containing a bomb
         self.tile.bomb = True
+
         # Load assets once
         if not Bomb._stage_images:
             self._load_assets()
@@ -43,14 +54,15 @@ class Bomb:
     @classmethod
     def _load_assets(cls) -> None:
         images = graphics.images
+
         # Bomb animation frames
+        cls._stage_images.clear()
         for i in range(1, 6):
-            img_key = f"bomb_stage_{i}"
-            if img_key in images:
-                ratio = cfg.TILE_SIZE / images[img_key].get_width()
-                cls._stage_images.append(
-                    graphics.resize_image(images[img_key], ratio)
-                )
+            key = f"bomb_stage_{i}"
+            if key in images:
+                ratio = cfg.TILE_SIZE / images[key].get_width()
+                cls._stage_images.append(graphics.resize_image(images[key], ratio))
+
         # Explosion sprites
         if "bomb_explosion_horizontal" in images:
             ratio_h = cfg.TILE_SIZE / images["bomb_explosion_horizontal"].get_width()
@@ -58,6 +70,8 @@ class Bomb:
         if "bomb_explosion_vertical" in images:
             ratio_v = cfg.TILE_SIZE / images["bomb_explosion_vertical"].get_width()
             cls._explosion_vertical = graphics.resize_image(images["bomb_explosion_vertical"], ratio_v)
+
+    # ----------------------------------- lifecycle ---------------------------
 
     def update(self, game_grid: List[tile_module.Tile], players: List[player_module.Player]) -> bool:
         """
@@ -83,62 +97,82 @@ class Bomb:
         """
         if not self.exploded:
             if self.fuse_frames > 0 and Bomb._stage_images:
+                # progress 0..len-1 based on fuse
                 stage_index = min(
                     len(Bomb._stage_images) - 1,
-                    (self._frame_counter * len(Bomb._stage_images)) // self.fuse_frames
+                    (self._frame_counter * len(Bomb._stage_images)) // max(1, self.fuse_frames)
                 )
-            else:
-                stage_index = 0
-            image = Bomb._stage_images[stage_index]
-            surface.blit(image, self.tile.pos)
+                surface.blit(Bomb._stage_images[stage_index], self.tile.pos)
         else:
-            # centre explosion
-            surface.blit(Bomb._stage_images[4], self.tile.pos)
+            # center (use the last stage as a simple center sprite if available)
+            if Bomb._stage_images:
+                surface.blit(Bomb._stage_images[-1], self.tile.pos)
+
             # horizontal arms
-            for dx in [1, -1]:
-                for step in range(1, self.radius + 1):
-                    nx = self.grid_pos[0] + dx * step
-                    if not (0 <= nx < cfg.GRID_WIDTH):
-                        break
-                    pos = (self.tile.pos[0] + cfg.TILE_SIZE * dx * step, self.tile.pos[1])
-                    if Bomb._explosion_horizontal:
+            if Bomb._explosion_horizontal:
+                for dx in [1, -1]:
+                    for step in range(1, self.radius + 1):
+                        nx = self.grid_pos[0] + dx * step
+                        if not (0 <= nx < cfg.GRID_WIDTH):
+                            break
+                        pos = (self.tile.pos[0] + cfg.TILE_SIZE * dx * step, self.tile.pos[1])
                         surface.blit(Bomb._explosion_horizontal, pos)
+
             # vertical arms
-            for dy in [1, -1]:
-                for step in range(1, self.radius + 1):
-                    ny = self.grid_pos[1] + dy * step
-                    if not (0 <= ny < cfg.GRID_HEIGHT):
-                        break
-                    pos = (self.tile.pos[0], self.tile.pos[1] + cfg.TILE_SIZE * dy * step)
-                    if Bomb._explosion_vertical:
+            if Bomb._explosion_vertical:
+                for dy in [1, -1]:
+                    for step in range(1, self.radius + 1):
+                        ny = self.grid_pos[1] + dy * step
+                        if not (0 <= ny < cfg.GRID_HEIGHT):
+                            break
+                        pos = (self.tile.pos[0], self.tile.pos[1] + cfg.TILE_SIZE * dy * step)
                         surface.blit(Bomb._explosion_vertical, pos)
+
+    # ----------------------------------- internals --------------------------
 
     def _explode(self, game_grid: List[tile_module.Tile], players: List[player_module.Player]) -> None:
         """
-        Trigger the explosion: mark affected tiles, remove obstacles, and kill players.
+        Trigger the explosion: mark affected tiles, remove obstacles (and maybe drop powerups),
+        and kill players on affected tiles.
         """
         self.exploded = True
+
         # include the bomb's own tile
         self.explosion_tiles.append(self.tile)
         self.tile.exploding = True
-        # propagate outward
+
+        # propagate in 4 directions
         for dx, dy in [(1, 0), (0, 1), (-1, 0), (0, -1)]:
             for step in range(1, self.radius + 1):
                 nx = self.grid_pos[0] + dx * step
                 ny = self.grid_pos[1] + dy * step
                 if not (0 <= nx < cfg.GRID_WIDTH and 0 <= ny < cfg.GRID_HEIGHT):
                     break
+
                 idx = ny * cfg.GRID_WIDTH + nx
                 neighbour_tile = game_grid[idx]
+
                 self.explosion_tiles.append(neighbour_tile)
                 neighbour_tile.exploding = True
+
+                # stop at walls/obstacles, but first remove the obstacle and maybe drop a powerup
                 if neighbour_tile.obstacle:
                     neighbour_tile.obstacle = False
-                    if random.random() < cfg.POWER_UP_DROP_CHANCE:
-                        powerup_module.create_powerup(neighbour_tile)
                     neighbour_tile.sprite = tile_module.Tile.empty_tile_sprite
-                    break
-        # kill players caught in the blast
+
+                    # Optional: drop a powerup
+                    if getattr(neighbour_tile, "powerup", None) is None:
+                        if random.random() < POWERUP_DROP_CHANCE and POWERUP_DROP_TABLE:
+                            effect_id = random.choice(POWERUP_DROP_TABLE)
+                            try:
+                                neighbour_tile.powerup = powerup_module.create_powerup(effect_id)
+                            except Exception:
+                                # silently ignore if the effect key or icon is missing
+                                pass
+
+                    break  # stop propagation in this direction once an obstacle is hit
+
+        # kill players caught in the blast (grid-based check)
         for p in players:
             if getattr(p, "state", None) == "dead":
                 continue
@@ -146,7 +180,7 @@ class Bomb:
                 if p.grid_pos == t.grid_pos:
                     try:
                         p.state = "dead"
-                        p.update_sprite()    
+                        p.update_sprite()
                     except Exception:
                         pass
                     break
