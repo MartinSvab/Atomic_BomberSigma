@@ -28,7 +28,6 @@ class Tile:
         self.exploding = False
         self.neighbours = [None, None, None, None]
 
-        # NEW: optional powerup sitting on this tile
         self.powerup = None
 
     def draw(self, surface):

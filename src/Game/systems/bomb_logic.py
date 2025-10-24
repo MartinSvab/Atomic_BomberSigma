@@ -22,7 +22,7 @@ def handle_bomb_input(player, bombs: List[Bomb], game_grid) -> None:
             tile_index = row * cfg.GRID_WIDTH + col
             tile = game_grid[tile_index]
             if not tile.bomb:
-                bombs.append(Bomb(tile, (col, row)))
+                bombs.append(Bomb(tile, (col, row), owner=player, radius=player.bomb_range))
                 player.last_bomb_time = pygame.time.get_ticks()
             break
 

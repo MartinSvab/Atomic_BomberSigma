@@ -151,11 +151,19 @@ def _recompute_bomb_range(player, instances: List[EffectInstance]):
     bonus = sum(i.magnitude for i in instances)
     player.bomb_range = base + bonus
 
+def _recompute_bomb_cooldown(player, instances: List[EffectInstance]):
+    base = getattr(player, "base_bomb_cooldown_ms", 3000)
+    if not instances:
+        player.bomb_cooldown = base
+        return
+    bonus = sum(i.magnitude for i in instances)
+    player.bomb_cooldown_ms = max(500, base - (bonus * 500))
+
 
 SPECS: Dict[str, EffectSpec] = {
     "speed_boost": EffectSpec(
         effect_id="speed_boost",
-        icon_key="powerup_speedboost",   # <-- set to your real key; HUD has a fallback
+        icon_key="powerup_speedboost",   
         on_recompute=_recompute_speed,
         stacking=STACK_REFRESH,
         default_duration_ms=6000,
@@ -163,13 +171,22 @@ SPECS: Dict[str, EffectSpec] = {
     ),
     "bomb_range_up": EffectSpec(
         effect_id="bomb_range_up",
-        icon_key="icon_bomb_range",   # <-- set to your real key; HUD can show static
+        icon_key="powerup_bomb_range",   
         on_recompute=_recompute_bomb_range,
         stacking=STACK_STACK,
         max_stacks=5,
         default_duration_ms=0,        # 0 => permanent upgrade
         default_magnitude=1,
     ),
+    "bomb_cooldown_reduce": EffectSpec(
+        effect_id="bomb_cooldown_reduce",
+        icon_key="powerup_bomb_cooldown",
+        on_recompute=_recompute_bomb_cooldown,                   
+        stacking=STACK_STACK,
+        max_stacks=999,
+        default_duration_ms=0,           # 0 => permanent upgrade
+        default_magnitude=1
+    )
 }
 
 # ----------------- Pickups (spawnables) -----------------
