@@ -7,7 +7,7 @@
       "request": "launch",
       "program": "launch.py",
       "console": "integratedTerminal",
-      "cwd": "${workspaceFolder}\\src"
+      "cwd": "${workspaceFolder}/src"
     }
   ]
 }
