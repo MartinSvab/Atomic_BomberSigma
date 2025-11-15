@@ -5,10 +5,20 @@ pygame.init()
 
 # Set up display
 SCREEN_INFO = pygame.display.Info()
-SCREEN_WIDTH = SCREEN_INFO.current_w
-SCREEN_HEIGHT = SCREEN_INFO.current_h
-FPS = 60
-DISPLAY = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN | pygame.SCALED)
+PHYSICAL_WIDTH = SCREEN_INFO.current_w
+PHYSICAL_HEIGHT = SCREEN_INFO.current_h
+
+# --- logical resolution ---
+LOGICAL_WIDTH = 1920
+LOGICAL_HEIGHT = 1080
+
+SCREEN_WIDTH = LOGICAL_WIDTH
+SCREEN_HEIGHT = LOGICAL_HEIGHT
+
+DISPLAY = pygame.display.set_mode(
+    (LOGICAL_WIDTH, LOGICAL_HEIGHT),
+    pygame.FULLSCREEN | pygame.SCALED
+)
 DISPLAY_CENTER_X = DISPLAY.get_width() // 2
 DISPLAY_CENTER_Y = DISPLAY.get_height() // 2
 pygame.display.set_caption("Atomic BomberSigma")
@@ -16,6 +26,7 @@ pygame.display.set_caption("Atomic BomberSigma")
 
 # Set up clock
 CLOCK = pygame.time.Clock()
+FPS = 60
 
 
 # Grid Settings

@@ -37,6 +37,21 @@ class Player_hud:
         bomb_range_surface = images.get("powerup_bomb_range") or _icon_bombs[8]
         bomb_cd_surface = images.get("powerup_bomb_cooldown") or _icon_bombs[8]
 
+        #Powerup icon locations
+        self.speed_icon_pos = (
+            self.position[0] + self.hud_image.get_width() + 20,
+            self.position[1] + 10
+        )
+        self.bomb_range_pos = (
+            self.position[0] + self.hud_image.get_width() + 20,
+            self.position[1] + self.hud_image.get_height() + 10
+        )
+        self.bomb_cd_pos = (
+            self.position[0] + self.hud_image.get_width() + 110,
+            self.position[1] + 10
+        )
+
+        #Powerup icon classes
         self._speed_icon = draining_icon(resize_image(speed_icon_surface, 1), "powerup_speedboost")
         self._range_icon = stacking_icon(resize_image(bomb_range_surface, 1), "powerup_bomb_range")
         self._cooldown_icon = stacking_icon(resize_image(bomb_cd_surface, 1), "powerup_bomb_cooldown")
@@ -73,41 +88,23 @@ class Player_hud:
         surface.blit(timer_icon, timer_pos)
 
         # -------- Speed boost draining icon (reads from effects) --------
-        speed_icon_pos = (-999,-999) #just setting a default value off screen so that the actual pos has time to load
         frac = 0.0
         if hasattr(p, "effects"):
             frac = p.effects.fraction_left("speed_boost")
 
-        if speed_icon_pos is (-999,-999): #check if it has been loaded yet, if not (-999,-999) then load it and never do it again
-            speed_icon_pos = (
-                self.position[0] + self.hud_image.get_width() + 20,  # to the right of the face
-                self.position[1] + 10
-            )
-        self._speed_icon.draw_fraction(surface, speed_icon_pos, frac)
+        self._speed_icon.draw_fraction(surface, self.speed_icon_pos, frac)
         # ---------------------------------------------------------------
         # -------- Bomb range stacking icon (reads from effects) --------
-        bomb_range_pos = (-999,-999)
         stack = 0
         if hasattr(p, "effects"):
             stack = p.effects.stack_count("bomb_range_up")
-        
-        if bomb_range_pos is (-999,-999):
-            bomb_range_pos = (
-                self.position[0] + self.hud_image.get_width() + 20,
-                self.position[1] + self.hud_image.get_height() + 10
-            )
-        self._range_icon.draw_stack(surface, bomb_range_pos, stack)
+
+        self._range_icon.draw_stack(surface, self.bomb_range_pos, stack)
         # ---------------------------------------------------------------
         # -------- Bomb cooldown stacking icon (reads from effects) --------
-        bomb_cd_pos = (-999,-999)
-        stack = 0
+        cd_stack = 0
         if hasattr(p, "effects"):
-            stack = p.effects.stack_count("bomb_cooldown_reduce")
-        
-        if bomb_cd_pos is (-999,-999):
-            bomb_cd_pos = (
-                self.position[0] + self.hud_image.get_width() + 110,
-                self.position[1] + 10
-            )
-        self._cooldown_icon.draw_stack(surface, bomb_cd_pos, stack)
+            cd_stack = p.effects.stack_count("bomb_cooldown_reduce")
+
+        self._cooldown_icon.draw_stack(surface, self.bomb_cd_pos, cd_stack)
         # ---------------------------------------------------------------
