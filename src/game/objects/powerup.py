@@ -131,6 +131,10 @@ class Effects:
     def any_active(self, effect_id: str) -> bool:
         return bool(self._active.get(effect_id))
 
+    def stack_count(self, effect_id: str) -> int:
+        lst = self._active.get(effect_id, [])
+        return len(lst)
+
 
 # ----------------- Effect specs/logic -----------------
 

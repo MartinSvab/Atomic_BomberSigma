@@ -30,7 +30,7 @@ class StackingIcon:
         self.underline_color = underline_color
         self.underline_thickness = underline_thickness
 
-    def draw(self, surface: pygame.Surface, pos: tuple[int, int], stack: int):
+    def draw_stack(self, surface: pygame.Surface, pos: tuple[int, int], stack: int):
         # choose which base to draw (grayscale if none, colored if any)
         base = self.icon if stack >= 1 else self.icon_gs
         surface.blit(base, pos)
