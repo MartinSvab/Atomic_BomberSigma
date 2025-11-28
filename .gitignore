@@ -16,3 +16,8 @@ ENV/
 # VS Code and other IDEs
 .vscode/
 .idea/
+
+# Build files
+build/
+dist/
+launch.spec

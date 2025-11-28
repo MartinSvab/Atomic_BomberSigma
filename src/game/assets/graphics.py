@@ -2,24 +2,54 @@ import pygame
 import numpy as np
 import colorsys
 import os
+import sys
+
+# Dictionary of loaded images
+images: dict[str, pygame.Surface] = {}
 
 
-#TODO = RESIZE ALL IMAGES WHEN LOADING THEM TO THEIR APPROPRIATE SIZE (TILE SIZE)
+def _get_images_base_path() -> str:
+    """
+    Return the directory where the image files live.
 
-images = {}
+    - When running from source:   <project_root>/game/assets/images
+    - When running as a PyInstaller EXE:
+        <_MEIPASS>/game/assets/images
+    """
+    # Running from a PyInstaller bundle?
+    if hasattr(sys, "_MEIPASS"):
+        # In the EXE, we will bundle images into game/assets/images
+        return os.path.join(sys._MEIPASS, "game", "assets", "images")
+    else:
+        # Normal dev run: graphics.py lives in game/assets/
+        # so images are in game/assets/images
+        return os.path.join(os.path.dirname(__file__), "images")
 
 
 def initialize_images():
-    path_to_images = "../images/"
+    """
+    Load all images from the images directory into the global `images` dict.
+    Keys are the lowercase filename without extension.
+    """
+    base_path = _get_images_base_path()
 
-    all_images = os.listdir(path_to_images)
-    
+    if not os.path.isdir(base_path):
+        raise FileNotFoundError(f"Image directory not found: {base_path!r}")
+
+    all_images = os.listdir(base_path)
+
     for image in all_images:
-        image_name = image.split(".")[0].lower()
-        full_path = os.path.join(path_to_images, image)
-        images[image_name] = pygame.image.load(full_path).convert_alpha()
+        # Skip non-files just in case
+        full_path = os.path.join(base_path, image)
+        if not os.path.isfile(full_path):
+            continue
 
-def resize_image(image, aspect_ratio):
+        image_name = image.split(".")[0].lower()
+        surf = pygame.image.load(full_path).convert_alpha()
+        images[image_name] = surf
+
+
+def resize_image(image: pygame.Surface, aspect_ratio: float) -> pygame.Surface:
     original = image
 
     new_width = int(original.get_width() * aspect_ratio)
@@ -28,10 +58,12 @@ def resize_image(image, aspect_ratio):
     scaled = pygame.transform.smoothscale(original, (new_width, new_height))
     return scaled
 
-def rotate_image(image, degrees):
-    return pygame.transform.rotate(image,degrees)
 
-def shift_hue(surface, hue_shift):
+def rotate_image(image: pygame.Surface, degrees: float) -> pygame.Surface:
+    return pygame.transform.rotate(image, degrees)
+
+
+def shift_hue(surface: pygame.Surface, hue_shift: float) -> pygame.Surface:
     surface = surface.convert_alpha()  # Ensure it has per-pixel alpha
 
     # Get RGB and Alpha arrays
