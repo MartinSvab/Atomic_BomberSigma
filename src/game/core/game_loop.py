@@ -26,15 +26,20 @@ def run():
     game_grid = grid.create_grid()
     bombs: list = []
 
-    #Create players
+    #Create and spawn players
     player_list = []
+    used_tiles = []
     for p in range(cfg.LOCAL_PLAYERS):
         random_hue = random.uniform(0, 1)
-        random_tile = game_grid[random.randint(0, len(game_grid) - 1)]
+        while True:
+            random_tile = game_grid[random.randint(0, len(game_grid) - 1)]
+            if not random_tile.obstacle and random_tile not in used_tiles:
+                break
         player_list.append(
             player.create_player(random_tile.pos, random_tile.grid_pos, random_hue, p)
         )
         player_list[p].hud = player_hud.Player_hud((cfg.PLAYER_HUD_MARGIN,cfg.PLAYER_HUD_MARGIN + (p * 250)),player_list[p])
+        used_tiles.append(random_tile)
 
     while running:
         cfg.CLOCK.tick(cfg.FPS)

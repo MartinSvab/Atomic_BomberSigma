@@ -1,25 +1,41 @@
 from game.objects.tile import Tile
 from game.assets import config as cfg
+from game.objects.grid_preset import GridPreset
 import random
 
 
-def create_grid():
+def create_grid(preset_name: str | None = None):
     x_offset = (cfg.SCREEN_WIDTH  - cfg.GRID_WIDTH  * cfg.TILE_SIZE) // 2
     y_offset = (cfg.SCREEN_HEIGHT - cfg.GRID_HEIGHT * cfg.TILE_SIZE) // 2
     tiles = []
-    
+
+    preset = None
+    if preset_name is not None:
+        try:
+            preset = GridPreset(preset_name)
+        except ValueError:
+            # Unknown preset, just fall back to random
+            preset = None
+
+            
     for row in range(cfg.GRID_HEIGHT):
         for col in range(cfg.GRID_WIDTH):
             x = col * cfg.TILE_SIZE + x_offset
-            y = row * cfg.TILE_SIZE + y_offset   # Creates the tile on the grid
+            y = row * cfg.TILE_SIZE + y_offset
 
-            is_obstacle = random.random() < cfg.TILE_OBSTACLE_CHANCE # Decides if tile has an obstacle
-            tile = Tile((col, row), (x, y), obstacle=is_obstacle) 
+            if preset is not None:
+                # Use the scaled pattern
+                is_obstacle = preset.is_obstacle(cfg.GRID_WIDTH, cfg.GRID_HEIGHT, row, col)
+            else:
+                # Old random behavior
+                is_obstacle = random.random() < cfg.TILE_OBSTACLE_CHANCE
+
+            tile = Tile((col, row), (x, y), obstacle=is_obstacle)
             tiles.append(tile)
 
     assign_neighbors(tiles, cfg.GRID_WIDTH, cfg.GRID_HEIGHT)
-    
     return tiles
+
 
 
 def draw_grid(tiles:list[Tile], surface):
