@@ -1,14 +1,15 @@
 import pygame
 from game.assets import config as cfg
 from game.assets import graphics
+from game.core import options_menu
 from game.systems import input
-from game.ui import button, options_menu
+from game.ui import button
 
 
 
 def run():
     running = True # If running is false, it ends the loop, and the run() function returns should_quit, 
-    should_quit = False # to say to launch.py whether it should progress to the game loop or exit
+    should_quit = False # to say to launch.py whether it should progress to the next phase or exit
     
     images = graphics.images
 

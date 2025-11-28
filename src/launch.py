@@ -1,24 +1,9 @@
-import pygame
-import sys
-import game.assets.config
 from game.assets.graphics import initialize_images
+from game.assets import config as cfg # Import config to initialize display settings
 
 # One time loading of assets
 initialize_images()
 
-
-import game.ui.main_menu as main_menu
-import game.core.game_loop as game_loop
-
-
+import game.core.game_state_manager as game_state_manager
 if __name__ == "__main__":
-    quit = False
-    
-    while not quit:
-        quit = main_menu.run()
-        if not quit:
-            quit = game_loop.run()
-    
-    #maybe like a end cutscene here?
-    pygame.quit()
-    sys.exit()
+    game_state_manager.run()

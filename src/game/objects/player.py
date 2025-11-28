@@ -2,7 +2,7 @@
 import pygame  # for timing
 from game.assets.graphics import images, shift_hue, resize_image
 from game.assets import config as cfg
-from game.objects.powerup import Effects  # <-- NEW
+from game.objects.powerup import Effects
 import time
 
 states = {

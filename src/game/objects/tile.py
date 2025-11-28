@@ -26,6 +26,7 @@ class Tile:
         self.obstacle = obstacle
         self.bomb = False
         self.exploding = False
+        self.spawn_tile = False
         self.neighbours = [None, None, None, None]
 
         self.powerup = None
