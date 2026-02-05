@@ -38,10 +38,11 @@ def create_grid(preset_name: str | None = None):
 
 
 
-def draw_grid(tiles:list[Tile], surface):
-    for tile in tiles:
-        tile.draw(surface)
-
+def draw_grid(tiles:list[Tile], surface, resized:float | None = None):
+        for tile in tiles:
+            if resized:
+                tile.pos = tuple([resized*x for x in tile.pos])
+            tile.draw(surface)
 
 
 def assign_neighbors(tiles:list[Tile], grid_width, grid_height):
