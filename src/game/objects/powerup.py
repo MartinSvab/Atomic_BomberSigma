@@ -81,6 +81,17 @@ class Effects:
         self.player = player
         self._active: Dict[str, List[EffectInstance]] = {}
 
+    def apply_time_offset(self, delta_ms: int):
+        """
+        Shift all active effect timers forward by delta_ms.
+        Use this when the game is paused so durations don't tick down.
+        """
+        if not delta_ms:
+            return
+        for lst in self._active.values():
+            for inst in lst:
+                inst.started_at += delta_ms
+
     def add(self, effect_id: str, duration_ms: Optional[int] = None, magnitude: Optional[int] = None):
         spec = SPECS.get(effect_id)
         if spec is None:

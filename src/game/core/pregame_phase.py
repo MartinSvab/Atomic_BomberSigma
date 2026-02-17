@@ -46,6 +46,9 @@ def run():
         confirm_current
     )
 
+    # allow PlayerSettingsUI to trigger the same confirm flow (e.g. Enter key)
+    players_ui.on_confirm = confirm_current
+
     while running:
         cfg.CLOCK.tick(cfg.FPS)
         input.update_event_queue()

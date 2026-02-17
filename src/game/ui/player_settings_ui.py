@@ -11,6 +11,7 @@ class PlayerSettingsUI:
     def __init__(self):
         self.images = graphics.images
         self.player_count = cfg.LOCAL_PLAYERS
+        self.on_confirm = None
         self.kb_icons = {
             "left":  self.images["keybind_left"],
             "up":    self.images["keybind_up"],
@@ -74,7 +75,7 @@ class PlayerSettingsUI:
             self.player_count -= 1
             self.buttons = self._build_buttons()
 
-    def handle_events(self, events, on_confirm):
+    def handle_events(self, events):
         for event in events:
             if self.editing_bind is not None and event.type == pygame.KEYDOWN:
                 p_i, direction = self.editing_bind
@@ -86,10 +87,9 @@ class PlayerSettingsUI:
             for btn in self.buttons:
                 btn.handle_event(event)
 
-            # You can call on_confirm for example if the player presses Enter
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                self.done = True
-                on_confirm()
+                if self.on_confirm:
+                    self.on_confirm()
 
     def draw(self, surface):
         for btn in self.buttons:
@@ -116,3 +116,6 @@ class PlayerSettingsUI:
                     )
 
         cfg.LOCAL_PLAYERS = self.player_count
+
+    def confirm(self):
+        self.done = True

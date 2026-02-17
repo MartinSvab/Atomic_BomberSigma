@@ -40,9 +40,13 @@ class MapSelectionUI:
         self.index = (self.index + 1) % len(self.map_names)
 
     def handle_events(self, events):
-        for e in events:
+        for event in events:
             for b in self.buttons:
-                b.handle_event(e)
+                b.handle_event(event)
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                if self.confirm:
+                    self.confirm()
 
     def draw(self, surface):
         # let the preview system render the current selection
@@ -61,5 +65,5 @@ class MapSelectionUI:
 
     def confirm(self):
         self.done = True
-        # if you want to store selection somewhere global, do it here
+
         # e.g. cfg.SELECTED_MAP = self.selected_map_name
