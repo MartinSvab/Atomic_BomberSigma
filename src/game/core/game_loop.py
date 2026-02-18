@@ -39,6 +39,7 @@ def run():
 
     #Create players
     player_list = []
+    alive_players = []
     used_tiles = []
     for p in range(cfg.LOCAL_PLAYERS):
         random_hue = random.uniform(0, 1)
@@ -77,6 +78,8 @@ def run():
                 if(player_state != "dead"):
                     input.check_for_movement_input(player_list[p], game_grid)
                     bomb_logic.handle_bomb_input(player_list[p], bombs, game_grid)
+
+            
                 
 
 
@@ -96,7 +99,6 @@ def run():
 
         #pause menu
         if paused:
-            print("entering pause")
             pause_started = pygame.time.get_ticks()
             cont = pm.pause()
             pause_elapsed = pygame.time.get_ticks() - pause_started

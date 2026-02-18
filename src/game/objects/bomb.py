@@ -86,23 +86,26 @@ class Bomb:
 
     # ----------------------------------- lifecycle ---------------------------
 
-    def update(self, game_grid: List[tile_module.Tile], players: List[player_module.Player]) -> bool:
+    def update(self, game_grid: List[tile_module.Tile], players: List[player_module.Player]):
         """
         Tick the fuse or count down the explosion animation.
-        Returns True when the bomb has finished exploding and should be removed.
+        Returns (finished: bool, killed_players: list[Player]).
         """
         if not self.exploded:
             self._frame_counter += 1
             if self._frame_counter >= self.fuse_frames:
-                self._explode(game_grid, players)
+                killed = self._explode(game_grid, players)
+            else:
+                killed = []
         else:
             self.explosion_frames_remaining -= 1
             if self.explosion_frames_remaining <= 0:
                 for t in self.explosion_tiles:
                     t.exploding = False
                 self.tile.bomb = False
-                return True
-        return False
+                return True, []
+            killed = []
+        return False, killed
 
     def draw(self, surface: pygame.Surface) -> None:
         """
@@ -155,7 +158,7 @@ class Bomb:
 
     # ----------------------------------- internals --------------------------
 
-    def _explode(self, game_grid: List[tile_module.Tile], players: List[player_module.Player]) -> None:
+    def _explode(self, game_grid: List[tile_module.Tile], players: List[player_module.Player]):
         """
         Trigger the explosion: mark affected tiles, remove obstacles (and maybe drop powerups),
         and kill players on affected tiles.
@@ -205,6 +208,7 @@ class Bomb:
                     break  # stop going further in this direction
 
         # kill players caught in the blast
+        killed_players = []
         for p in players:
             if getattr(p, "state", None) == "dead":
                 continue
@@ -215,4 +219,7 @@ class Bomb:
                         p.update_sprite()
                     except Exception:
                         pass
+                    killed_players.append(p)
                     break
+
+        return killed_players

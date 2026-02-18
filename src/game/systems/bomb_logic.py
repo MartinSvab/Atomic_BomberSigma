@@ -26,16 +26,21 @@ def handle_bomb_input(player, bombs: List[Bomb], game_grid) -> None:
                 player.last_bomb_time = pygame.time.get_ticks()
             break
 
-def update_bombs(bombs: List[Bomb], game_grid, players) -> None:
+def update_bombs(bombs: List[Bomb], game_grid, players):
     """
     Tick all bombs and remove any that are finished exploding.
+    Returns list of players killed this tick.
     """
     finished = []
+    killed_players = []
     for bomb in bombs:
-        if bomb.update(game_grid, players):
+        finished_now, killed_now = bomb.update(game_grid, players)
+        killed_players.extend(killed_now)
+        if finished_now:
             finished.append(bomb)
     for b in finished:
         bombs.remove(b)
+    return killed_players
 
 def draw_bombs(bombs: List[Bomb], surface) -> None:
     """
