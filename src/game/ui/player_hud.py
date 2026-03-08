@@ -29,6 +29,7 @@ class Player_hud:
         self.position = position
         self.player = player
         self.last_known_state = player.state
+        self.preloaded_icons: dict[str, pygame.Surface] = {}
 
         self.hud_image = shift_hue(_icon_states[self.last_known_state], player.hue)
 
@@ -56,10 +57,27 @@ class Player_hud:
         self._range_icon = stacking_icon(resize_image(bomb_range_surface, 1), "powerup_bomb_range")
         self._cooldown_icon = stacking_icon(resize_image(bomb_cd_surface, 1), "powerup_bomb_cooldown")
 
+    def preload_icons(self):
+        """Precompute hue-shifted HUD faces to avoid runtime cost."""
+        try:
+            self.preloaded_icons = {
+                state: shift_hue(_icon_states[state], self.player.hue)
+                for state in _icon_states
+            }
+            # Replace current HUD image with preloaded version
+            self.hud_image = self.preloaded_icons.get(self.last_known_state, self.hud_image)
+        except Exception:
+            # If anything fails, fall back to on-demand shift_hue
+            self.preloaded_icons = {}
+
     def update_hud(self):
         # Swap the face icon when state changes
         if self.last_known_state != self.player.state:
-            self.hud_image = shift_hue(_icon_states[self.player.state], self.player.hue)
+            self.hud_image = (
+                self.preloaded_icons.get(self.player.state)
+                if self.preloaded_icons
+                else shift_hue(_icon_states[self.player.state], self.player.hue)
+            )
             self.last_known_state = self.player.state
 
     def draw(self, surface: pygame.Surface):

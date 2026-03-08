@@ -17,6 +17,8 @@ class Player:
     def __init__(self, pos, grid_pos, hue, player_index):
         self.state = "alive"
         self.hue = hue
+        # Preload slot; filled by async preloader in game_loop
+        self.preloaded_sprites: dict[str, pygame.Surface] = {}
         self.sprite = shift_hue(states["alive"], hue)
         self.pos = pos
         self.grid_pos = grid_pos
@@ -40,7 +42,12 @@ class Player:
         self.effects = Effects(self)
 
     def update_sprite(self):
-        self.sprite = shift_hue(states[self.state], self.hue)
+        # Use preloaded sprites when available to avoid runtime hue shifting
+        self.sprite = (
+            self.preloaded_sprites.get(self.state)
+            if self.preloaded_sprites
+            else shift_hue(states[self.state], self.hue)
+        )
         if self.hud:
             self.hud.update_hud()
 

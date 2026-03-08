@@ -1,12 +1,45 @@
 import pygame
+from concurrent.futures import ThreadPoolExecutor
 from game.assets import config as cfg
-from game.assets.graphics import images
+from game.assets.graphics import images, shift_hue
 from game.systems import input
 from game.objects import grid, player
 from game.systems import bomb_logic
 from game.objects import powerup as powerup_module
 from game.ui import player_hud, pause_menu
 import random
+
+
+def _preload_player_assets_async(players):
+    """Precompute hue-shifted sprites/HUD icons off the main thread."""
+    if not players:
+        return
+
+    def build(player_obj):
+        try:
+            # Preload board sprites
+            preloaded = {
+                "alive": shift_hue(player.states["alive"], player_obj.hue),
+                "dead": shift_hue(player.states["dead"], player_obj.hue),
+            }
+            player_obj.preloaded_sprites = preloaded
+            # Ensure current sprite uses cached version
+            player_obj.sprite = preloaded.get(player_obj.state, player_obj.sprite)
+
+            # Preload HUD icons if HUD exists
+            if getattr(player_obj, "hud", None):
+                player_obj.hud.preload_icons()
+        except Exception:
+            # Silently continue; runtime fallback will handle it
+            pass
+
+    # Cap workers to avoid excessive threads; at least 2
+    workers = max(2, min(8, len(players)))
+    executor = ThreadPoolExecutor(max_workers=workers)
+    for p in players:
+        executor.submit(build, p)
+    # Do not wait; allow game to continue while preloading
+    executor.shutdown(wait=False)
 
 def run():
     running = True
@@ -52,6 +85,9 @@ def run():
         )
         player_list[p].hud = player_hud.Player_hud((cfg.PLAYER_HUD_MARGIN,cfg.PLAYER_HUD_MARGIN + (p * 250)),player_list[p])
         used_tiles.append(random_tile)
+
+    # Preload hue-shifted sprites and HUD icons asynchronously to avoid runtime lag
+    _preload_player_assets_async(player_list)
 
     #=====MAIN GAME LOOP======
     while running:
