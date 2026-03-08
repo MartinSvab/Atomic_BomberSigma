@@ -27,6 +27,7 @@ class Player:
         self.hud = None
         self.last_bomb_time = 0  # Last tick a bomb was placed
         self.player_index = player_index
+        self.tod = float('inf') # Time of death
 
         # ---- Base stats ----
         self.base_move_speed = 8
