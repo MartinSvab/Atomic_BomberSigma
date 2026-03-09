@@ -148,6 +148,8 @@ def run():
             #game end check
             match len(alive_players):
                 case 0:
+                    winner_text.set_image(images["lose_text"])
+                    winner_arrow_variants.clear() #clear to save memory since we won't be using them
                     game_end = True
                 case 1:
                     match_winner = alive_players[0]
@@ -204,8 +206,9 @@ def run():
             game_over_text.draw(cfg.DISPLAY)
 
             if finished1:
-                winner_arrow.update(dt)
-                winner_arrow.draw(cfg.DISPLAY)
+                if match_winner:
+                    winner_arrow.update(dt)
+                    winner_arrow.draw(cfg.DISPLAY)
 
                 winner_text.update(dt)
                 winner_text.draw(cfg.DISPLAY)
