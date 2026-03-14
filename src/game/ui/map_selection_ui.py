@@ -8,7 +8,7 @@ from game.objects.grid_preset import _presets
 
 class MapSelectionUI:
     def __init__(self):
-        self.map_names = list(_presets.keys())
+        self.map_names = list(_presets.keys()) + ["random"]
         self.index = 0
         self.done = False
 
@@ -51,14 +51,20 @@ class MapSelectionUI:
     def draw(self, surface):
         # let the preview system render the current selection
         scale = 0.5
-
+        
         rect = map_preview.get_preview_rect(self.selected_map_name, scale)
+        
         pos = (
             cfg.DISPLAY_CENTER_X - rect.w // 2,
             cfg.DISPLAY_CENTER_Y - rect.h // 2
-        )
+            )
 
-        map_preview.preview_map(self.selected_map_name, pos, cfg.DISPLAY, scale)
+        if self.selected_map_name != "random":
+            map_preview.preview_map(self.selected_map_name, pos, surface, scale)
+        else:
+            random_icon = graphics.images["random_map_icon"]
+            random_icon = graphics.resize_image(random_icon, (rect.w/random_icon.get_width()))
+            surface.blit(random_icon, pos)
 
         for b in self.buttons:
             b.draw(surface)
@@ -66,4 +72,4 @@ class MapSelectionUI:
     def confirm(self):
         self.done = True
 
-        # e.g. cfg.SELECTED_MAP = self.selected_map_name
+        cfg.SELECTED_MAP = self.selected_map_name

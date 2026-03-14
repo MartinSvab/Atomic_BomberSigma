@@ -82,7 +82,7 @@ def run():
 )
 
     #Create grid
-    game_grid = grid.create_grid()
+    game_grid = grid.create_grid(cfg.SELECTED_MAP if not cfg.SELECTED_MAP == "random" else None) #check if selected map is random, if so pass
     bombs: list = []
 
     #stuff for game end animations
