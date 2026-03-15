@@ -1,6 +1,6 @@
 import pygame
 from game.assets import config as cfg
-from game.assets import graphics
+from game.assets import graphics,sounds
 from game.core import options_menu
 from game.systems import input
 from game.ui import button
@@ -40,6 +40,7 @@ def run():
            button.Button(quit_button_image,(cfg.DISPLAY_CENTER_X, cfg.DISPLAY_CENTER_Y + 300), quit_game),
            button.Button(logo_image,(cfg.DISPLAY_CENTER_X, cfg.DISPLAY_CENTER_Y-300),None)]
 
+    sounds.play_music("secret_music")
 
     while running:
         cfg.CLOCK.tick(cfg.FPS) # Tick at the desired framerate

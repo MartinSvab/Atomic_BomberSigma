@@ -48,6 +48,11 @@ SELECTED_MAP = None
 
 #Miscellanesus
 TILE_OBSTACLE_CHANCE = 0.2
-POWER_UP_DROP_CHANCE = 1      # % on destroyed obstacle
+POWER_UP_DROP_CHANCE = 1      # % on destroyed obstacle (0 - 1)
 SPEED_BOOST_MULTIPLIER = 1.5     # % faster
 SPEED_BOOST_DURATION_MS = 5000   # 5 seconds
+
+#Audio
+MASTER_VOLUME = 0.5
+SFX_VOLUME = 0.5
+MUSIC_VOLUME = 0.5

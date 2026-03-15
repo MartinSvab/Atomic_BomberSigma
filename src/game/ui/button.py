@@ -1,4 +1,5 @@
 import pygame
+from game.assets import sounds
 
 class Button:
     def __init__(self, image, pos, action=None, label=None):
@@ -19,7 +20,7 @@ class Button:
         return self.rect.collidepoint(pygame.mouse.get_pos())
 
     def handle_event(self, event):
-        """Call this from your main loop for each pygame event."""
+        """Call this from main loop for each pygame event."""
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             # start click only if mouse down happened inside the button
             if self.rect.collidepoint(event.pos):
@@ -33,4 +34,5 @@ class Button:
 
     def perform_action(self):
         if self.action:
+            sounds.play_sound("beep", channel="ui")
             self.action()
