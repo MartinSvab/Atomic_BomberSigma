@@ -3,7 +3,7 @@ from game.assets import config as cfg
 from game.systems import input
 from game.assets import graphics
 from game.ui import button
-from game.ui.player_settings_ui import PlayerSettingsUI
+from game.ui.player_customization_ui import PlayerCustomizationUI
 from game.ui.map_selection_ui import MapSelectionUI
 
 def run():
@@ -21,11 +21,11 @@ def run():
     def quit_game():
         nonlocal running, back_to_menu
         running = False
-        back_to_menu = False
+        back_to_menu = None
 
     # phase UIs
     map_ui = MapSelectionUI()
-    players_ui = PlayerSettingsUI()
+    players_ui = PlayerCustomizationUI()
 
     phase = "map"
     current_ui = map_ui

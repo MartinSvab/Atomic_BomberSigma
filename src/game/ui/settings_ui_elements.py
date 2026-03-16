@@ -1,7 +1,7 @@
 import pygame
 
 
-class Slider:
+class Slider: #slider class for volume and other settings
     def __init__(
         self,
         pos: tuple,
@@ -76,3 +76,4 @@ class Slider:
         ratio = (clamped - self.min_value) / (self.max_value - self.min_value)
         self.button_rect.centerx = self.slider_left_pos + int((self.size[0] - 1) * ratio)
 
+    

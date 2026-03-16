@@ -96,7 +96,8 @@ def run():
     used_tiles = []
 
     for p in range(cfg.LOCAL_PLAYERS):
-        random_hue = random.uniform(0, 1)
+        configured_hues = getattr(cfg, "PLAYER_HUES", [])
+        random_hue = configured_hues[p] if p < len(configured_hues) else random.uniform(0, 1)
         while True:
             random_tile = game_grid[random.randint(0, len(game_grid) - 1)]
             if not random_tile.obstacle and random_tile not in used_tiles:
