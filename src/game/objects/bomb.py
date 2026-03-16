@@ -1,3 +1,5 @@
+from game.assets import sounds
+
 # game/objects/bomb.py
 """
 Bombs for Atomic BomberSigma.
@@ -143,6 +145,8 @@ class Bomb:
 
         self.explosion_tiles.clear()
         self.explosion_parts.clear()
+
+        sounds.play_sound("explosion","gameplay")
 
         # center tile
         self._add_explosion_part("center", self.tile)

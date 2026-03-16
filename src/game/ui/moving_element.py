@@ -80,8 +80,8 @@ class WinnerArrow(MovingElement): #EVERYTHING IN THIS CLASS IS MADE BY CHATGPT I
         tail_pos = pygame.Vector2(tail_x, tail_y)
 
         # point to the center of the winner sprite
-        player_center_x = winner_player.pos[0] + winner_player.sprite.get_width() / 2
-        player_center_y = winner_player.pos[1] + winner_player.sprite.get_height() / 2
+        player_center_x = winner_player.target_pos[0] + winner_player.sprite.get_width() / 2
+        player_center_y = winner_player.target_pos[1] + winner_player.sprite.get_height() / 2
 
         target_pos = pygame.Vector2(player_center_x, player_center_y)
         return tail_pos, target_pos

@@ -9,67 +9,13 @@ from game.ui import button
 font = pygame.font.SysFont(None, 24)
 title_font = pygame.font.SysFont(None, 34)
 
-
-class HueSlider:
-    _shared_track: pygame.Surface | None = None
-
-    def __init__(self, center_pos: tuple[int, int], size: tuple[int, int], initial_value: float):
-        self.pos = center_pos
-        self.size = size
-        self.hovered = False
-        self.grabbed = False
-
-        self.slider_left_pos = self.pos[0] - (size[0] // 2)
-        self.slider_right_pos = self.pos[0] + (size[0] // 2)
-        self.slider_top_pos = self.pos[1] - (size[1] // 2)
-
-        self.container_rect = pygame.Rect(
-            self.slider_left_pos,
-            self.slider_top_pos,
-            self.size[0],
-            self.size[1],
-        )
-
-        initial_value = max(0.0, min(1.0, initial_value))
-        button_x = self.slider_left_pos + int((self.size[0] - 1) * initial_value)
-        self.button_rect = pygame.Rect(button_x - 9, self.slider_top_pos - 6, 18, self.size[1] + 12)
-
-        if HueSlider._shared_track is None or HueSlider._shared_track.get_size() != self.size:
-            HueSlider._shared_track = self._build_gradient_surface(self.size)
-
-    @staticmethod
-    def _build_gradient_surface(size: tuple[int, int]) -> pygame.Surface:
-        width, height = size
-        gradient = pygame.Surface(size, pygame.SRCALPHA)
-        for x in range(width):
-            hue = x / max(1, width - 1)
-            color = pygame.Color(0)
-            color.hsva = (hue * 360, 100, 100, 100)
-            pygame.draw.line(gradient, color, (x, 0), (x, height))
-        return gradient
-
-    def move_slider(self, mouse_pos: tuple[int, int]):
-        pos = mouse_pos[0]
-        if pos < self.slider_left_pos:
-            pos = self.slider_left_pos
-        if pos > self.slider_right_pos:
-            pos = self.slider_right_pos
-        self.button_rect.centerx = pos
-
-    def get_value(self) -> float:
-        val_range = self.slider_right_pos - self.slider_left_pos - 1
-        button_val = self.button_rect.centerx - self.slider_left_pos
-        return max(0.0, min(1.0, button_val / max(1, val_range)))
-
-    def draw(self, surface: pygame.Surface):
-        border_color = "white" if self.hovered or self.grabbed else "darkgray"
-        surface.blit(HueSlider._shared_track, self.container_rect.topleft)
-        pygame.draw.rect(surface, border_color, self.container_rect, width=2, border_radius=8)
-        pygame.draw.rect(surface, (235, 235, 235), self.button_rect, border_radius=6)
-        pygame.draw.rect(surface, "black", self.button_rect, width=2, border_radius=6)
+PRESET_HUES = [0.0, 0.12, 0.24, 0.36, 0.56, 0.72]
 
 
 class PlayerCustomizationUI:
+    _preset_icons: dict[float, pygame.Surface] = {}
+    _arrow_images: dict[str, pygame.Surface] = {}
+
     def __init__(self):
         self.images = graphics.images
         self.player_count = cfg.LOCAL_PLAYERS
@@ -95,6 +41,7 @@ class PlayerCustomizationUI:
         self.player_icon_base = self.images["icon_player_sigma"]
 
         self._ensure_player_data(self.player_count)
+        self._ensure_preset_cache()
         self.buttons: list[button.Button] = []
         self.player_panels: list[dict] = []
         self._rebuild_ui()
@@ -113,9 +60,37 @@ class PlayerCustomizationUI:
         if not hasattr(cfg, "PLAYER_HUES"):
             cfg.PLAYER_HUES = []
 
-        default_hues = [0.0, 0.33, 0.66, 0.16]
+        default_hues = PRESET_HUES[:4]
         while len(cfg.PLAYER_HUES) < n_players:
             cfg.PLAYER_HUES.append(default_hues[len(cfg.PLAYER_HUES) % len(default_hues)])
+
+        for i in range(len(cfg.PLAYER_HUES)):
+            cfg.PLAYER_HUES[i] = self._closest_preset_hue(cfg.PLAYER_HUES[i])
+
+    def _ensure_preset_cache(self):
+        if not PlayerCustomizationUI._arrow_images:
+            PlayerCustomizationUI._arrow_images = {
+                "left": graphics.resize_image(self.images["arrow_l"], 0.18),
+                "right": graphics.resize_image(self.images["arrow_r"], 0.18),
+            }
+
+        if not PlayerCustomizationUI._preset_icons:
+            PlayerCustomizationUI._preset_icons = {
+                hue: shift_hue(self.player_icon_base, hue)
+                for hue in PRESET_HUES
+            }
+
+    def _closest_preset_hue(self, hue: float) -> float:
+        return min(PRESET_HUES, key=lambda preset: abs(preset - hue))
+
+    def _get_hue_index(self, player_index: int) -> int:
+        hue = self._closest_preset_hue(cfg.PLAYER_HUES[player_index])
+        return PRESET_HUES.index(hue)
+
+    def _cycle_player_hue(self, player_index: int, direction: int):
+        current_index = self._get_hue_index(player_index)
+        next_index = (current_index + direction) % len(PRESET_HUES)
+        cfg.PLAYER_HUES[player_index] = PRESET_HUES[next_index]
 
     def _rebuild_ui(self):
         self.player_panels = []
@@ -133,10 +108,17 @@ class PlayerCustomizationUI:
             x = origin_x + col * (panel_size[0] + gap_x)
             y = origin_y + row * (panel_size[1] + gap_y)
             panel_rect = pygame.Rect(x, y, panel_size[0], panel_size[1])
-            slider = HueSlider(
-                center_pos=(x + 235, y + 185),
-                size=(310, 24),
-                initial_value=cfg.PLAYER_HUES[player_index],
+            color_center = (x + 570, y + 188)
+
+            left_button = button.Button(
+                PlayerCustomizationUI._arrow_images["left"],
+                (color_center[0] - 105, color_center[1]),
+                self._make_hue_cycle_action(player_index, -1),
+            )
+            right_button = button.Button(
+                PlayerCustomizationUI._arrow_images["right"],
+                (color_center[0] + 105, color_center[1]),
+                self._make_hue_cycle_action(player_index, 1),
             )
 
             bind_buttons = []
@@ -156,12 +138,14 @@ class PlayerCustomizationUI:
                 bind_button.meta = {"player": player_index, "direction": direction_name}
                 bind_buttons.append(bind_button)
 
-            self.buttons.extend(bind_buttons)
+            panel_buttons = [left_button, right_button, *bind_buttons]
+            self.buttons.extend(panel_buttons)
             self.player_panels.append(
                 {
                     "player": player_index,
                     "rect": panel_rect,
-                    "slider": slider,
+                    "color_center": color_center,
+                    "color_buttons": [left_button, right_button],
                     "bind_buttons": bind_buttons,
                 }
             )
@@ -177,6 +161,11 @@ class PlayerCustomizationUI:
             self._decrease_player_count,
         )
         self.buttons.extend([plus_btn, minus_btn])
+
+    def _make_hue_cycle_action(self, player_index: int, direction: int):
+        def action():
+            self._cycle_player_hue(player_index, direction)
+        return action
 
     def _increase_player_count(self):
         if self.player_count < 4:
@@ -200,17 +189,6 @@ class PlayerCustomizationUI:
                     keybinds[player_index][direction_index] = event.key
                 self.editing_bind = None
 
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                for panel in self.player_panels:
-                    slider = panel["slider"]
-                    if slider.container_rect.collidepoint(event.pos) or slider.button_rect.collidepoint(event.pos):
-                        slider.grabbed = True
-                        slider.move_slider(event.pos)
-
-            elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                for panel in self.player_panels:
-                    panel["slider"].grabbed = False
-
             for btn in self.buttons:
                 btn.handle_event(event)
 
@@ -218,19 +196,11 @@ class PlayerCustomizationUI:
                 if self.on_confirm:
                     self.on_confirm()
 
-        mouse_pos = pygame.mouse.get_pos()
-        for panel in self.player_panels:
-            slider = panel["slider"]
-            if slider.grabbed:
-                slider.move_slider(mouse_pos)
-            slider.hovered = slider.container_rect.collidepoint(mouse_pos) or slider.button_rect.collidepoint(mouse_pos)
-            cfg.PLAYER_HUES[panel["player"]] = slider.get_value()
-
     def draw(self, surface: pygame.Surface):
         for panel in self.player_panels:
             player_index = panel["player"]
             panel_rect = panel["rect"]
-            slider = panel["slider"]
+            color_center_x, color_center_y = panel["color_center"]
 
             pygame.draw.rect(surface, "grey", panel_rect, border_radius=12)
             pygame.draw.rect(surface, "white", panel_rect, width=3, border_radius=12)
@@ -238,11 +208,17 @@ class PlayerCustomizationUI:
             header = title_font.render(f"Player {player_index + 1}", True, "white")
             surface.blit(header, (panel_rect.x + 24, panel_rect.y + 18))
 
-            icon = shift_hue(self.player_icon_base, cfg.PLAYER_HUES[player_index])
-            icon_rect = icon.get_rect(topleft=(panel_rect.x + 28, panel_rect.y + 62))
+            icon = PlayerCustomizationUI._preset_icons[self._closest_preset_hue(cfg.PLAYER_HUES[player_index])]
+            icon_rect = icon.get_rect(center=(panel_rect.x + 185, panel_rect.y + 160))
             surface.blit(icon, icon_rect)
 
-            slider.draw(surface)
+            swatch_color = pygame.Color(0)
+            swatch_color.hsva = (cfg.PLAYER_HUES[player_index] * 360, 100, 100, 100)
+            pygame.draw.circle(surface, swatch_color, (color_center_x, color_center_y + 37), 18)
+            pygame.draw.circle(surface, "white", (color_center_x, color_center_y + 37), 18, 2)
+
+            for color_button in panel["color_buttons"]:
+                color_button.draw(surface)
 
             for bind_button in panel["bind_buttons"]:
                 bind_button.draw(surface)
