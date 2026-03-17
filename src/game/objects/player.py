@@ -1,5 +1,6 @@
 # game/objects/player.py
 import pygame  # for timing
+from game.assets import sounds
 from game.assets.graphics import images, shift_hue, resize_image
 from game.assets import config as cfg
 from game.objects.powerup import Effects
@@ -57,6 +58,8 @@ class Player:
         self.effects.update()
 
         if self.is_moving:
+            sounds.play_random_sound_type("step", channel="footsteps")
+
             # Move current position toward target position
             x, y = self.pos
             tx, ty = self.target_pos

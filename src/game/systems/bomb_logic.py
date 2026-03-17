@@ -12,6 +12,8 @@ from game.assets import config as cfg
 from game.objects.bomb import Bomb
 from game.systems import input as input_sys
 
+from game.assets import sounds
+
 def handle_bomb_input(player, bombs: List[Bomb], game_grid) -> None:
     """
     Check the event queue for a space‑bar press and place a bomb on the player's tile.
@@ -24,6 +26,7 @@ def handle_bomb_input(player, bombs: List[Bomb], game_grid) -> None:
             if not tile.bomb:
                 bombs.append(Bomb(tile, (col, row), owner=player, radius=player.bomb_range))
                 player.last_bomb_time = pygame.time.get_ticks()
+                sounds.play_sound("bomb_place", "b_place")
             break
 
 def update_bombs(bombs: List[Bomb], game_grid, players):

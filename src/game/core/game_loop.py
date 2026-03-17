@@ -145,6 +145,7 @@ def run():
                 if player_list[p] in killed_players_tt:
                     alive_players.remove(player_list[p])
                     player_list[p].tod = pygame.time.get_ticks()
+                    
 
             #game end check
             match len(alive_players):

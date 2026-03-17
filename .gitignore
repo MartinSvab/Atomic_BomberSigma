@@ -21,3 +21,4 @@ ENV/
 build/
 dist/
 launch.spec
+AtomicBomberSigma.spec

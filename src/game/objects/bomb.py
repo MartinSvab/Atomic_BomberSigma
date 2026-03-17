@@ -51,6 +51,7 @@ class Bomb:
         self._frame_counter = 0
         self.exploded = False
         self.explosion_frames_remaining = EXPLOSION_FRAMES
+        self.fuse_channel = sounds.play_looping_sound("fuse")
 
         self.exploded_radius = radius
         self.explosion_tiles: List[tile_module.Tile] = []
@@ -146,7 +147,11 @@ class Bomb:
         self.explosion_tiles.clear()
         self.explosion_parts.clear()
 
-        sounds.play_sound("explosion","gameplay")
+        if self.fuse_channel is not None:
+            self.fuse_channel.stop()
+            self.fuse_channel = None
+
+        sounds.play_sound("explosion", "explosion")
 
         # center tile
         self._add_explosion_part("center", self.tile)
@@ -195,5 +200,6 @@ class Bomb:
                 except Exception:
                     pass
                 killed_players.append(p)
+                sounds.play_random_sound_type("hurt", "death")
 
         return killed_players

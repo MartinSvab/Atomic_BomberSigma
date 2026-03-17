@@ -22,6 +22,7 @@ from typing import Dict, List, Callable, Optional
 from game.assets import config as cfg
 from game.assets.graphics import images, resize_image
 
+from game.assets import sounds
 
 # ----------------- Effect runtime -----------------
 
@@ -230,6 +231,7 @@ class Powerup:
     def apply_to(self, player):
         if hasattr(player, "effects"):
             player.effects.add(self.effect_id, self.duration_ms, self.magnitude)
+            sounds.play_sound("pickup","pickup")
 
 
 def create_powerup(effect_id: str,

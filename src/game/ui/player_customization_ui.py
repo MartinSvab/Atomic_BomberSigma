@@ -214,8 +214,8 @@ class PlayerCustomizationUI:
 
             swatch_color = pygame.Color(0)
             swatch_color.hsva = (cfg.PLAYER_HUES[player_index] * 360, 100, 100, 100)
-            pygame.draw.circle(surface, swatch_color, (color_center_x, color_center_y + 37), 18)
-            pygame.draw.circle(surface, "white", (color_center_x, color_center_y + 37), 18, 2)
+            pygame.draw.circle(surface, swatch_color, (color_center_x, color_center_y), 18)
+            pygame.draw.circle(surface, "white", (color_center_x, color_center_y), 18, 2)
 
             for color_button in panel["color_buttons"]:
                 color_button.draw(surface)
