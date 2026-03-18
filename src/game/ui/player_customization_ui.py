@@ -152,12 +152,12 @@ class PlayerCustomizationUI:
 
         plus_btn = button.Button(
             self.images["plus_button"],
-            (cfg.DISPLAY_CENTER_X + 70, cfg.DISPLAY_CENTER_Y + 430),
+            (cfg.DISPLAY_CENTER_X - 70, cfg.DISPLAY_CENTER_Y + 300),
             self._increase_player_count,
         )
         minus_btn = button.Button(
             self.images["minus_button"],
-            (cfg.DISPLAY_CENTER_X + 170, cfg.DISPLAY_CENTER_Y + 430),
+            (cfg.DISPLAY_CENTER_X + 70, cfg.DISPLAY_CENTER_Y + 300),
             self._decrease_player_count,
         )
         self.buttons.extend([plus_btn, minus_btn])
