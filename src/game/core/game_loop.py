@@ -44,6 +44,7 @@ def _preload_player_assets_async(players):
 def run():
     running = True
     should_quit = False
+    should_restart = False
     paused = False
     game_end = False
 
@@ -82,7 +83,23 @@ def run():
 )
 
     #Create grid
-    game_grid = grid.create_grid(cfg.SELECTED_MAP if not cfg.SELECTED_MAP == "random" else None) #check if selected map is random, if so pass
+    def build_match_grid():
+        selected_preset = cfg.SELECTED_MAP if cfg.SELECTED_MAP != "random" else None
+        obstacle_chance = cfg.RANDOM_MAP_OBSTACLE_CHANCE if cfg.SELECTED_MAP == "random" else None
+
+        for _ in range(40):
+            generated_grid = grid.create_grid(selected_preset, obstacle_chance=obstacle_chance)
+            if len(grid.get_spawnable_tiles(generated_grid)) >= cfg.LOCAL_PLAYERS:
+                return generated_grid
+
+        generated_grid = grid.create_grid(selected_preset, obstacle_chance=obstacle_chance)
+        candidate_tiles = generated_grid[:]
+        random.shuffle(candidate_tiles)
+        for tile in candidate_tiles[:cfg.LOCAL_PLAYERS]:
+            grid.carve_spawn_lane(generated_grid, tile)
+        return generated_grid
+
+    game_grid = build_match_grid()
     bombs: list = []
 
     #stuff for game end animations
@@ -93,20 +110,22 @@ def run():
     #Create players
     player_list = []
     alive_players = []
-    used_tiles = []
+    spawnable_tiles = grid.get_spawnable_tiles(game_grid)
+    available_spawn_tiles = spawnable_tiles[:] if len(spawnable_tiles) >= cfg.LOCAL_PLAYERS else [
+        tile for tile in game_grid if not tile.obstacle
+    ]
 
     for p in range(cfg.LOCAL_PLAYERS):
         configured_hues = getattr(cfg, "PLAYER_HUES", [])
         random_hue = configured_hues[p] if p < len(configured_hues) else random.uniform(0, 1)
-        while True:
-            random_tile = game_grid[random.randint(0, len(game_grid) - 1)]
-            if not random_tile.obstacle and random_tile not in used_tiles:
-                break
+        if not available_spawn_tiles:
+            available_spawn_tiles = [tile for tile in game_grid if not tile.obstacle]
+        random_tile = random.choice(available_spawn_tiles)
+        available_spawn_tiles.remove(random_tile)
         new_player = player.create_player(random_tile.pos, random_tile.grid_pos, random_hue, p)
         player_list.append(new_player)
         alive_players.append(new_player)
         player_list[p].hud = player_hud.Player_hud((cfg.PLAYER_HUD_MARGIN,cfg.PLAYER_HUD_MARGIN + (p * 250)),player_list[p])
-        used_tiles.append(random_tile)
 
     for p in player_list:
         winner_text_variants[p] = shift_hue(images["win_text"], p.hue)
@@ -127,7 +146,7 @@ def run():
         if input.check_for_quit():
             quit_game()
 
-        if input.check_for_esc() and not game_end:
+        if input.check_for_esc():
             pause_game()
 
 
@@ -183,7 +202,7 @@ def run():
         #pause menu
         if paused:
             pause_started = pygame.time.get_ticks()
-            cont = pm.pause()
+            pause_action = pm.pause()
             pause_elapsed = pygame.time.get_ticks() - pause_started
             paused = False
 
@@ -194,8 +213,16 @@ def run():
                     if hasattr(p, "effects"):
                         p.effects.apply_time_offset(pause_elapsed)
 
-            if not cont:
+            if pause_action == "menu":
                 running = False
+            elif pause_action == "quit":
+                quit_game()
+            elif pause_action == "restart":
+                should_restart = True
+                running = False
+
+            if not running:
+                continue
 
 
         #Finishing animations when there is one or zero players alive
@@ -215,9 +242,6 @@ def run():
                 winner_text.update(dt)
                 winner_text.draw(cfg.DISPLAY)
 
-            if input.check_for_esc():
-                running = False
-
 
 
 
@@ -227,5 +251,8 @@ def run():
 
 
 
+
+    if should_restart:
+        return "restart"
 
     return should_quit

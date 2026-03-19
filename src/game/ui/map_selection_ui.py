@@ -1,9 +1,10 @@
 # game/ui/map_selection_ui.py
 import pygame
 from game.assets import config as cfg
+from game.assets import graphics
 from game.systems import map_preview
 from game.ui import button
-from game.assets import graphics
+from game.ui import settings_ui_elements
 from game.objects.grid_preset import _presets
 
 class MapSelectionUI:
@@ -11,10 +12,19 @@ class MapSelectionUI:
         self.map_names = list(_presets.keys()) + ["random"]
         self.index = 0
         self.done = False
+        self.random_obstacle_slider = settings_ui_elements.Slider(
+            (cfg.DISPLAY_CENTER_X, cfg.DISPLAY_CENTER_Y + 320),
+            (420, 24),
+            cfg.RANDOM_MAP_OBSTACLE_CHANCE,
+            0,
+            100,
+            label="Random Obstacle Chance",
+            display_suffix="%",
+        )
 
         images = graphics.images
-        arrow_left_image  = graphics.resize_image(images["arrow_l"], 0.2)
-        arrow_right_image = graphics.resize_image(images["arrow_r"], 0.2)
+        arrow_left_image  = graphics.resize_image(images["arrow_l"], 0.5)
+        arrow_right_image = graphics.resize_image(images["arrow_r"], 0.5)
 
         self.buttons = [
             button.Button(
@@ -44,15 +54,36 @@ class MapSelectionUI:
             for b in self.buttons:
                 b.handle_event(event)
 
+            if self.selected_map_name == "random":
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if self.random_obstacle_slider.container_rect.collidepoint(event.pos):
+                        self.random_obstacle_slider.grabbed = True
+                        self.random_obstacle_slider.move_slider(event.pos)
+                elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    self.random_obstacle_slider.grabbed = False
+
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 if self.confirm:
                     self.confirm()
 
+        if self.selected_map_name == "random":
+            mouse_pos = pygame.mouse.get_pos()
+            if self.random_obstacle_slider.grabbed:
+                self.random_obstacle_slider.move_slider(mouse_pos)
+                self.random_obstacle_slider.hover()
+            else:
+                self.random_obstacle_slider.hovered = self.random_obstacle_slider.container_rect.collidepoint(mouse_pos)
+            cfg.RANDOM_MAP_OBSTACLE_CHANCE = self.random_obstacle_slider.get_value() / 100
+        else:
+            self.random_obstacle_slider.grabbed = False
+            self.random_obstacle_slider.hovered = False
+
     def draw(self, surface):
         # let the preview system render the current selection
         scale = 0.5
+        preview_obstacle_chance = cfg.RANDOM_MAP_OBSTACLE_CHANCE if self.selected_map_name == "random" else None
         
-        rect = map_preview.get_preview_rect(self.selected_map_name, scale)
+        rect = map_preview.get_preview_rect(self.selected_map_name, scale, obstacle_chance=preview_obstacle_chance)
         
         pos = (
             cfg.DISPLAY_CENTER_X - rect.w // 2,
@@ -65,6 +96,7 @@ class MapSelectionUI:
             random_icon = graphics.images["random_map_icon"]
             random_icon = graphics.resize_image(random_icon, (rect.w/random_icon.get_width()))
             surface.blit(random_icon, pos)
+            self.random_obstacle_slider.draw(surface)
 
         for b in self.buttons:
             b.draw(surface)

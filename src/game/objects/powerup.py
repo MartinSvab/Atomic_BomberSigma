@@ -151,12 +151,14 @@ class Effects:
 # ----------------- Effect specs/logic -----------------
 
 def _recompute_speed(player, instances: List[EffectInstance]):
-    base = getattr(player, "base_move_speed", 8)
+    from game.objects import player as player_module
+
+    base = getattr(player, "base_move_speed", player_module.get_base_move_speed())
     if not instances:
         player.move_speed = base
         return
-    # sum magnitudes (works for REFRESH or STACK)
-    bonus = sum(i.magnitude for i in instances)
+    # Keep speed boosts proportional to tile size so movement stays consistent across grid sizes.
+    bonus = sum(i.magnitude for i in instances) * player_module.get_speed_boost_amount()
     player.move_speed = base + bonus
 
 def _recompute_bomb_range(player, instances: List[EffectInstance]):

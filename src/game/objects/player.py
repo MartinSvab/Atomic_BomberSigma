@@ -6,16 +6,36 @@ from game.assets import config as cfg
 from game.objects.powerup import Effects
 import time
 
-states = {
-    "alive": resize_image(images["player_default"],
-                          cfg.TILE_SIZE / images["player_default"].get_width()),
-    "dead": resize_image(images["player_dead"],
-                         cfg.TILE_SIZE / images["player_dead"].get_width())
-}
+states = {}
+_states_tile_size = None
+
+
+def refresh_player_states():
+    global states, _states_tile_size
+    states = {
+        "alive": resize_image(images["player_default"],
+                              cfg.TILE_SIZE / images["player_default"].get_width()),
+        "dead": resize_image(images["player_dead"],
+                             cfg.TILE_SIZE / images["player_dead"].get_width())
+    }
+    _states_tile_size = cfg.TILE_SIZE
+
+
+refresh_player_states()
+
+
+def get_base_move_speed() -> float:
+    return max(1.0, cfg.TILE_SIZE / 16)
+
+
+def get_speed_boost_amount() -> float:
+    return max(0.5, cfg.TILE_SIZE / 128)
 
 class Player:
     """Represents the player's in-game on-board sprite"""
     def __init__(self, pos, grid_pos, hue, player_index):
+        if _states_tile_size != cfg.TILE_SIZE:
+            refresh_player_states()
         self.state = "alive"
         self.hue = hue
         # Preload slot; filled by async preloader in game_loop
@@ -31,7 +51,7 @@ class Player:
         self.tod = float('inf') # Time of death
 
         # ---- Base stats ----
-        self.base_move_speed = 8
+        self.base_move_speed = get_base_move_speed()
         self.move_speed = self.base_move_speed
         self.base_bomb_cooldown_ms = 3000
         self.bomb_cooldown_ms = cfg.DEFAULT_BOMB_COOLDOWN

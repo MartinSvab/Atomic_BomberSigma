@@ -70,8 +70,8 @@ class PlayerCustomizationUI:
     def _ensure_preset_cache(self):
         if not PlayerCustomizationUI._arrow_images:
             PlayerCustomizationUI._arrow_images = {
-                "left": graphics.resize_image(self.images["arrow_l"], 0.18),
-                "right": graphics.resize_image(self.images["arrow_r"], 0.18),
+                "left": graphics.resize_image(self.images["arrow_l"], 0.22),
+                "right": graphics.resize_image(self.images["arrow_r"], 0.22),
             }
 
         if not PlayerCustomizationUI._preset_icons:

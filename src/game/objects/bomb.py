@@ -33,6 +33,7 @@ class Bomb:
     _stage_images: List[pygame.Surface] = []
     _explosion_horizontal: pygame.Surface | None = None
     _explosion_vertical: pygame.Surface | None = None
+    _asset_tile_size: int | None = None
 
     def __init__(
         self,
@@ -59,7 +60,7 @@ class Bomb:
 
         self.tile.bomb = True
 
-        if not Bomb._stage_images:
+        if not Bomb._stage_images or Bomb._asset_tile_size != cfg.TILE_SIZE:
             self._load_assets()
 
     @classmethod
@@ -80,6 +81,7 @@ class Bomb:
         if "bomb_explosion_vertical" in images:
             ratio_v = cfg.TILE_SIZE / images["bomb_explosion_vertical"].get_width()
             cls._explosion_vertical = graphics.resize_image(images["bomb_explosion_vertical"], ratio_v)
+        cls._asset_tile_size = cfg.TILE_SIZE
 
     # ----------------------------------- lifecycle ---------------------------
 
@@ -177,7 +179,7 @@ class Bomb:
                     neighbour_tile.sprite = tile_module.Tile.empty_tile_sprite
 
                     if getattr(neighbour_tile, "powerup", None) is None:
-                        if random.random() < POWERUP_DROP_CHANCE and POWERUP_DROP_TABLE:
+                        if random.random() < cfg.POWER_UP_DROP_CHANCE and POWERUP_DROP_TABLE:
                             effect_id = random.choice(POWERUP_DROP_TABLE)
                             try:
                                 neighbour_tile.powerup = powerup_module.create_powerup(effect_id)

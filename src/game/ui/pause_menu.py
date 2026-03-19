@@ -1,5 +1,6 @@
 import pygame
 from game.assets import config as cfg
+from game.assets import graphics
 from game.assets.graphics import images
 from game.ui import button as btn
 
@@ -10,30 +11,50 @@ class Pause_menu:
         
     def pause(self):
         # block here until ESC or a button finishes the pause
-        cont = True          # keep running flag for caller
-        waiting = True       # stay inside pause loop until an action fires
+        action = "resume"
+        waiting = True
+
+        def go_to_menu():
+            nonlocal action, waiting
+            action = "menu"
+            waiting = False
 
         def quit_game():
-            nonlocal cont, waiting
-            cont = False
+            nonlocal action, waiting
+            action = "quit"
             waiting = False
 
         def resume():
-            nonlocal waiting
+            nonlocal action, waiting
+            action = "resume"
             waiting = False
 
+        def play_again():
+            nonlocal action, waiting
+            action = "restart"
+            waiting = False
+
+        button_scale = 0.5
+        center_x = cfg.DISPLAY.get_width() / 2
+        center_y = cfg.DISPLAY.get_height() / 2
+        vertical_spacing = 220
 
         resume_button = btn.Button(
-            images["resume_button"],
-            (cfg.DISPLAY.get_width() / 2, (cfg.DISPLAY.get_height() - 600) / 2),
+            graphics.resize_image(images["resume_button"], button_scale),
+            (center_x, center_y - vertical_spacing),
             resume,
         )
-        quit_button = btn.Button(
-            images["menu_button"],
-            (cfg.DISPLAY.get_width() / 2, (cfg.DISPLAY.get_height() + 600) / 2),
-            quit_game,
+        again_button = btn.Button(
+            graphics.resize_image(images["again_button"], button_scale),
+            (center_x, center_y),
+            play_again,
         )
-        buttons = [resume_button, quit_button]
+        quit_button = btn.Button(
+            graphics.resize_image(images["menu_button"], button_scale),
+            (center_x, center_y + vertical_spacing),
+            go_to_menu,
+        )
+        buttons = [resume_button, again_button, quit_button]
 
         # simple event loop while paused
         while waiting:
@@ -55,4 +76,4 @@ class Pause_menu:
             pygame.display.flip()
             cfg.CLOCK.tick(cfg.FPS)
 
-        return cont
+        return action

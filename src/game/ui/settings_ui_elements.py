@@ -10,10 +10,14 @@ class Slider: #slider class for volume and other settings
         min_value: int,
         max_value: int,
         label: str = "",
+        display_suffix: str = "",
+        decimals: int = 0,
     ):
         self.pos = pos
         self.size = size
         self.label = label
+        self.display_suffix = display_suffix
+        self.decimals = decimals
         self.hovered = False
         self.grabbed = False
         self.font = pygame.font.SysFont(None, 36)
@@ -53,8 +57,14 @@ class Slider: #slider class for volume and other settings
         pygame.draw.rect(display, (70, 140, 255), self.button_rect, border_radius=6)
         pygame.draw.rect(display, "white", self.button_rect, width=2, border_radius=6)
 
+        current_value = self.get_value()
+        if self.decimals > 0:
+            value_text = f"{current_value:.{self.decimals}f}"
+        else:
+            value_text = str(int(round(current_value)))
+
         label_surface = self.font.render(
-            f"{self.label}: {int(round(self.get_value()))}",
+            f"{self.label}: {value_text}{self.display_suffix}",
             True,
             "white",
         )

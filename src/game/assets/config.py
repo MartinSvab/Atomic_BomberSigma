@@ -30,9 +30,11 @@ FPS = 60
 
 
 # Grid Settings
+DEFAULT_GRID_SIZE = 8
+GRID_WIDTH = DEFAULT_GRID_SIZE #defined in tiles
+GRID_HEIGHT = DEFAULT_GRID_SIZE
+MAX_BOARD_PIXELS = min(LOGICAL_WIDTH, LOGICAL_HEIGHT) - 56
 TILE_SIZE = 128 #defined in pixels
-GRID_WIDTH = 8 #defined in tiles    
-GRID_HEIGHT = 8 #defined in tiles
 BOARD_WIDTH = TILE_SIZE * GRID_WIDTH #defined in pixels
 BOARD_HEIGHT = TILE_SIZE * GRID_HEIGHT #defined in pixels
 GRID_X_POS = (SCREEN_WIDTH - BOARD_WIDTH) / 2 #pixels!
@@ -49,6 +51,7 @@ SELECTED_MAP = None
 
 #Miscellanesus
 TILE_OBSTACLE_CHANCE = 0.2
+RANDOM_MAP_OBSTACLE_CHANCE = TILE_OBSTACLE_CHANCE
 POWER_UP_DROP_CHANCE = 1      # % on destroyed obstacle (0 - 1)
 SPEED_BOOST_MULTIPLIER = 1.5     # % faster
 SPEED_BOOST_DURATION_MS = 5000   # 5 seconds
@@ -57,3 +60,26 @@ SPEED_BOOST_DURATION_MS = 5000   # 5 seconds
 MASTER_VOLUME = 0.5
 SFX_VOLUME = 0.5
 MUSIC_VOLUME = 0.5
+
+
+def refresh_grid_metrics():
+    global TILE_SIZE, BOARD_WIDTH, BOARD_HEIGHT, GRID_X_POS, GRID_Y_POS
+
+    largest_dimension = max(1, GRID_WIDTH, GRID_HEIGHT)
+    TILE_SIZE = max(24, MAX_BOARD_PIXELS // largest_dimension)
+    BOARD_WIDTH = TILE_SIZE * GRID_WIDTH
+    BOARD_HEIGHT = TILE_SIZE * GRID_HEIGHT
+    GRID_X_POS = (SCREEN_WIDTH - BOARD_WIDTH) / 2
+    GRID_Y_POS = (SCREEN_HEIGHT - BOARD_HEIGHT) / 2
+
+
+def set_grid_size(size: int):
+    global GRID_WIDTH, GRID_HEIGHT
+
+    clamped = max(5, min(14, int(size)))
+    GRID_WIDTH = clamped
+    GRID_HEIGHT = clamped
+    refresh_grid_metrics()
+
+
+refresh_grid_metrics()

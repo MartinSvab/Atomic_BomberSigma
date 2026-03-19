@@ -1,8 +1,8 @@
 import pygame
 from game.objects.grid import create_grid
 
-def preview_map(map_name: str, pos: tuple[int, int], surface, scale: float = 0.5):
-    tiles = create_grid(map_name)
+def preview_map(map_name: str, pos: tuple[int, int], surface, scale: float = 0.5, obstacle_chance: float | None = None):
+    tiles = create_grid(map_name, obstacle_chance=obstacle_chance)
 
     if not tiles:
         return
@@ -37,8 +37,8 @@ def preview_map(map_name: str, pos: tuple[int, int], surface, scale: float = 0.5
         surface.blit(tile_surf, (sx, sy))
 
 
-def get_preview_rect(map_name: str, scale: float = 0.2) -> pygame.Rect:
-    tiles = create_grid(map_name)
+def get_preview_rect(map_name: str, scale: float = 0.2, obstacle_chance: float | None = None) -> pygame.Rect:
+    tiles = create_grid(map_name, obstacle_chance=obstacle_chance)
     if not tiles:
         return pygame.Rect(0, 0, 0, 0)
 
