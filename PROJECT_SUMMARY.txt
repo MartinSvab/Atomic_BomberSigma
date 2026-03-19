@@ -1,0 +1,904 @@
+Atomic BomberSigma - Detailed Project Summary
+============================================
+
+1. Project Identity
+-------------------
+Atomic BomberSigma is a local multiplayer Bomberman-style prototype written in Python with Pygame.
+The codebase is organized into a small set of focused packages:
+
+- src/game/assets: configuration and asset loading
+- src/game/core: high-level game states and phase transitions
+- src/game/objects: gameplay domain objects
+- src/game/systems: stateless or light logic helpers that operate on objects
+- src/game/ui: reusable UI widgets and on-screen interfaces
+
+The repository also contains PyInstaller spec files, built output directories, and a README.
+
+
+2. Repository-Level Pipeline
+----------------------------
+The repo has two main operating modes:
+
+1. Run from source:
+   - Entry point is src/launch.py.
+   - Pygame is initialized through config import side effects.
+   - Images and audio are loaded once at startup.
+   - Control passes to the state manager, which loops between menus and gameplay.
+
+2. Build as an executable:
+   - AtomicBomberSigma.spec packages src/launch.py with image assets, audio assets, and config.conf.
+   - launch.spec appears to be an older or simpler build config that only bundles images.
+   - Asset loaders in graphics.py and sounds.py explicitly support both source execution and PyInstaller execution through sys._MEIPASS path resolution.
+
+High-level runtime pipeline:
+
+src/launch.py
+-> game.assets.graphics.initialize_images()
+-> game.assets.sounds.initialize_sounds()
+-> game.core.game_state_manager.run()
+-> main menu
+-> pregame setup
+-> active match
+-> pause/game over/restart/menu/quit transitions
+
+
+3. Startup and Global Configuration
+-----------------------------------
+The startup path is intentionally small.
+
+src/launch.py:
+- Imports image initialization from game.assets.graphics.
+- Imports sound initialization from game.assets.sounds.
+- Imports game.assets.config as cfg, which initializes Pygame and creates the display immediately.
+- Calls initialize_images() and initialize_sounds() exactly once.
+- Calls game.core.game_state_manager.run() when launched as __main__.
+
+src/game/assets/config.py is effectively the global runtime settings module.
+Its responsibilities are:
+
+- Initialize Pygame with pygame.init().
+- Create a fullscreen scaled display at logical resolution 1920x1080.
+- Store logical and physical screen metrics.
+- Create the global clock and FPS target.
+- Define grid dimensions, tile metrics, HUD layout metrics, and gameplay constants.
+- Define audio volume settings.
+- Expose refresh_grid_metrics() so the board scales with grid size.
+- Expose set_grid_size(size) to clamp grid size to 5..14 and recompute board metrics.
+
+Important configuration values:
+- LOGICAL_WIDTH / LOGICAL_HEIGHT: render space
+- DISPLAY: the global Pygame surface
+- CLOCK / FPS: frame pacing
+- GRID_WIDTH / GRID_HEIGHT: board dimensions
+- TILE_SIZE: computed cell pixel size
+- LOCAL_PLAYERS: number of active local players
+- PLAYER_HUES: per-player hue shift choices
+- DEFAULT_BOMB_COOLDOWN: default bomb placement cooldown in ms
+- SELECTED_MAP: chosen preset map name or "random"
+- TILE_OBSTACLE_CHANCE / RANDOM_MAP_OBSTACLE_CHANCE: random generation density
+- POWER_UP_DROP_CHANCE: chance of a destroyed obstacle producing a powerup
+- SPEED_BOOST_MULTIPLIER / SPEED_BOOST_DURATION_MS: nominal speed effect settings
+- MASTER_VOLUME / SFX_VOLUME / MUSIC_VOLUME: audio controls
+
+
+4. Core State Flow
+------------------
+The game is not built around a complex engine or formal scene graph. Instead, it uses a manual state loop in game_state_manager.py.
+
+src/game/core/game_state_manager.py:
+- Owns the top-level application loop.
+- Repeatedly enters:
+  - main menu
+  - pregame phase
+  - gameplay loop
+- Handles restart logic after a finished match.
+- Distinguishes between:
+  - quitting the whole app
+  - going back from pregame to menu
+  - restarting directly into a new match
+- Calls pygame.quit() and sys.exit() once the outer loop ends.
+
+Detailed state flow:
+
+1. main_menu.run()
+   - Returns True if the user wants to quit.
+   - Returns False if the user wants to proceed.
+
+2. pregame_phase.run()
+   - Returns True to go back to main menu.
+   - Returns False to continue into the match.
+   - Returns None to quit the application.
+
+3. game_loop.run()
+   - Returns "restart" to immediately rebuild and replay a match.
+   - Returns True to quit the app.
+   - Returns False to return to the outer state flow without quitting.
+
+
+5. Main Menu and Setup Flow
+---------------------------
+src/game/core/main_menu.py:
+- Builds the main landing screen.
+- Loads button images from the graphics image registry.
+- Creates Button instances for:
+  - play
+  - options
+  - quit
+  - logo display with no action
+- Starts background music with sounds.play_music("secret_music").
+- Polls the shared input event queue.
+- Dispatches events to buttons.
+- Returns a boolean indicating whether the app should quit.
+
+src/game/core/options_menu.py:
+- Implements a settings page.
+- Uses Slider widgets to manipulate:
+  - master volume
+  - SFX volume
+  - music volume
+  - grid size
+  - powerup drop chance
+- Applies changes live each frame:
+  - sound volumes are pushed into the audio subsystem
+  - grid size updates cfg and recomputes board metrics
+  - powerup drop chance updates cfg.POWER_UP_DROP_CHANCE
+- Returns True only when the user chooses to quit the full app from this screen.
+
+src/game/core/pregame_phase.py:
+- Implements a two-step setup phase before gameplay starts.
+- Phase 1: map selection using MapSelectionUI.
+- Phase 2: player customization using PlayerCustomizationUI.
+- Exposes one confirm button that advances the current phase.
+- Lets PlayerCustomizationUI invoke the same confirm callback directly, for example through Enter.
+- Returns:
+  - True for back-to-menu
+  - False for continue
+  - None for quit
+
+
+6. Gameplay Match Pipeline
+--------------------------
+src/game/core/game_loop.py contains the main active match logic and is the closest thing to the gameplay orchestrator.
+
+The match setup pipeline is:
+
+1. Initialize local control flags:
+   - running
+   - should_quit
+   - should_restart
+   - paused
+   - game_end
+
+2. Prebuild UI/animation helpers:
+   - Pause_menu instance
+   - MovingElement for "game over" text
+   - MovingElement for winner text
+   - WinnerArrow for winner indication
+
+3. Build a playable grid:
+   - Uses cfg.SELECTED_MAP or random generation.
+   - Tries up to 40 times to find enough spawnable tiles for all local players.
+   - Falls back to carving clear spawn lanes if needed.
+
+4. Build player list:
+   - Uses spawnable tiles or any non-obstacle tiles if necessary.
+   - Assigns configured hue values from cfg.PLAYER_HUES.
+   - Creates a Player_hud for each player.
+
+5. Precompute winner UI variants:
+   - Winner text hue-shifted per player.
+   - Winner arrow hue-shifted per player.
+
+6. Asynchronously preload player board sprites and HUD icons:
+   - _preload_player_assets_async(players) uses ThreadPoolExecutor.
+   - This offloads hue-shifting and HUD icon preparation from the main loop.
+
+7. Enter the frame loop:
+   - Tick clock
+   - refresh event queue
+   - process quit and pause signals
+   - update bombs
+   - update players
+   - detect match end
+   - draw board, players, bombs, pause overlay, and end animations
+   - flip display
+
+8. Exit with either:
+   - "restart"
+   - should_quit boolean
+
+Important gameplay loop behaviors:
+- Bomb updates happen before player movement input handling each frame.
+- Dead players stop receiving movement and bomb input.
+- Pause time is compensated by shifting bomb cooldown timers and active powerup timers forward.
+- When the game enters an end state, bombs are cleared and only the end animation sequence continues.
+
+
+7. Input Pipeline
+-----------------
+src/game/systems/input.py centralizes event queue capture and a few common checks.
+
+Responsibilities:
+- update_event_queue(): caches pygame.event.get() into module-global _event_list.
+- check_for_quit(): scans _event_list for QUIT.
+- check_for_esc(): scans _event_list for ESC keydown.
+- check_for_movement_input(player, game_grid): reads current key state and converts directional presses into movement attempts.
+
+Design note:
+- This project uses a hybrid input model:
+  - event-based handling for menu buttons, pause, quit, and bomb key presses
+  - real-time key-state polling for directional movement
+
+src/game/assets/keybinds.py:
+- Stores default keybindings for up to four players.
+- Each player row is ordered as:
+  0 left
+  1 down
+  2 right
+  3 up
+  4 bomb
+
+PlayerCustomizationUI mutates this keybind table directly during setup.
+
+
+8. Grid and Map Generation
+--------------------------
+Grid creation is handled procedurally with optional preset scaling.
+
+src/game/objects/grid.py:
+- create_grid(preset_name=None, obstacle_chance=None)
+  - Creates one Tile per board cell.
+  - Computes tile pixel positions from config metrics.
+  - Uses GridPreset sampling when a preset is selected.
+  - Uses random obstacle generation otherwise.
+  - Calls assign_neighbors before returning the flat tile list.
+
+- draw_grid(tiles, surface, resized=None)
+  - Draws all tiles.
+  - Optionally mutates tile positions if a resize factor is passed.
+
+- assign_neighbors(tiles, grid_width, grid_height)
+  - Stores directional neighbors for each tile in right/down/left/up order.
+
+- tile_has_safe_spawn_axis(tile)
+  - Returns True if the tile is empty and has two open tiles on either the horizontal axis or the vertical axis.
+
+- get_spawnable_tiles(tiles)
+  - Filters tiles through tile_has_safe_spawn_axis.
+
+- get_tile_at(tiles, col, row)
+  - Returns a tile by grid coordinate or None if out of bounds.
+
+- clear_tile(tile)
+  - Removes obstacle status and restores the empty tile sprite.
+
+- carve_spawn_lane(tiles, tile)
+  - Clears the tile itself and clears either a horizontal or vertical adjacent lane to guarantee a usable spawn corridor.
+
+src/game/objects/grid_preset.py:
+- Contains the symbolic preset registry _presets.
+- Defines GridPreset, which scales a small pattern to any current board size.
+
+Supported presets:
+- sandbox
+- corners
+- cross
+- frame
+
+GridPreset responsibilities:
+- Validate preset existence and row consistency.
+- Expose available_names().
+- Sample a symbolic token from scaled coordinates.
+- Convert sampled tokens into obstacle booleans with is_obstacle().
+
+src/game/systems/map_preview.py:
+- Builds temporary grids using create_grid() to preview map layouts in UI.
+- Scales tile sprites down and renders the result to arbitrary screen positions.
+- Exposes get_preview_rect() so the UI can center the preview accurately.
+
+
+9. Tile Object
+--------------
+src/game/objects/tile.py defines the fundamental board cell.
+
+Class: Tile
+Responsibilities:
+- Represent one logical and rendered board cell.
+- Cache resized board sprites at the class level.
+- Store both grid coordinates and pixel coordinates.
+- Track whether the tile currently contains:
+  - an obstacle
+  - a bomb
+  - an active explosion
+  - a spawn flag
+  - a powerup
+- Store neighbor references.
+- Draw its base sprite and any powerup overlay.
+
+Class-level behavior:
+- refresh_sprites() resizes the base floor and obstacle sprites to match current cfg.TILE_SIZE.
+- __init__ refreshes sprite cache automatically when tile size changes.
+
+
+10. Player Object and Player Runtime
+------------------------------------
+src/game/objects/player.py defines the playable actor.
+
+Module-level helpers:
+- refresh_player_states()
+  - Rebuilds cached alive/dead sprites sized to the current tile size.
+- get_base_move_speed()
+  - Computes movement speed as a function of current tile size.
+- get_speed_boost_amount()
+  - Computes per-stack speed effect contribution based on tile size.
+- create_player(...)
+  - Convenience factory returning a Player instance.
+
+Class: Player
+Responsibilities:
+- Represent one player on the board.
+- Store state:
+  - state string ("alive" or "dead")
+  - hue
+  - grid_pos
+  - current pixel position
+  - target pixel position
+  - movement status
+  - assigned HUD
+  - last bomb placement time
+  - player index
+  - time of death
+- Store combat/mobility stats:
+  - base_move_speed
+  - move_speed
+  - base_bomb_cooldown_ms
+  - bomb_cooldown_ms
+  - base_bomb_range
+  - bomb_range
+- Own an Effects component for temporary and permanent modifiers.
+- Cache hue-shifted board sprites in preloaded_sprites.
+
+Main methods:
+- update_sprite()
+  - Switches the visible sprite to match current alive/dead state.
+  - Uses preloaded sprite cache when available.
+  - Notifies the HUD to refresh.
+
+- draw(surface)
+  - Updates active effects every frame.
+  - If moving, plays a random step sound on the footsteps channel.
+  - Interpolates position toward target_pos using move_speed.
+  - Stops moving once the destination is reached.
+  - Draws the player sprite and HUD.
+
+- can_place_bomb()
+  - Enforces bomb cooldown using pygame ticks.
+
+Gameplay behavior:
+- Movement is discrete by tile choice but smooth in rendered pixel space.
+- Death only changes state and sprite; there is no respawn/lives system here.
+
+
+11. Movement System
+-------------------
+src/game/systems/movement.py contains movement resolution.
+
+Function: handle_movement(player, direction, game_grid)
+Responsibilities:
+- Ignore movement requests while the player is already moving.
+- Reject moves outside board bounds.
+- Reject moves into obstacle tiles.
+- Update player.grid_pos immediately when a move is accepted.
+- Set player.target_pos to the destination tile's pixel position.
+- Mark player.is_moving = True.
+- Detect and apply powerup pickup immediately when moving into a tile.
+
+This means movement commitment and pickup collection happen before the rendered interpolation finishes.
+
+
+12. Bomb Placement and Explosion Pipeline
+-----------------------------------------
+Bomb logic is split between a small system module and a richer domain object.
+
+src/game/systems/bomb_logic.py:
+- handle_bomb_input(player, bombs, game_grid)
+  - Checks event queue for the player-specific bomb key.
+  - Prevents placement if the player is on cooldown or the tile already holds a bomb.
+  - Creates a Bomb with owner and current bomb range.
+  - Resets player.last_bomb_time.
+  - Plays placement SFX.
+
+- update_bombs(bombs, game_grid, players)
+  - Updates every active bomb.
+  - Collects killed players returned by bombs.
+  - Removes bombs whose explosion animation finished.
+
+- draw_bombs(bombs, surface)
+  - Delegates draw calls to each Bomb.
+
+src/game/objects/bomb.py:
+- Defines the Bomb class and explosion tunables.
+
+Module constants:
+- DEFAULT_FUSE_FRAMES = 60
+- EXPLOSION_FRAMES = 30
+- POWERUP_DROP_TABLE = ["speed_boost", "bomb_range_up", "bomb_cooldown_reduce"]
+
+Class: Bomb
+Responsibilities:
+- Represent a placed bomb tied to a source tile and owner.
+- Track fuse timing and explosion lifetime.
+- Lock its source tile by setting tile.bomb = True.
+- Load and cache bomb stage sprites plus horizontal/vertical explosion sprites.
+- Play a looping fuse sound while armed.
+- Resolve explosion propagation.
+- Damage players standing on exploded tiles.
+- Destroy obstacles and optionally spawn powerups.
+
+Key instance fields:
+- tile
+- grid_pos
+- owner
+- radius
+- fuse_frames
+- _frame_counter
+- exploded
+- explosion_frames_remaining
+- fuse_channel
+- exploded_radius
+- explosion_tiles
+- explosion_parts
+
+Key methods:
+- _load_assets()
+  - Rebuilds size-dependent bomb and explosion sprites.
+
+- update(game_grid, players)
+  - Advances fuse countdown until detonation.
+  - After detonation, counts down the visible explosion frames.
+  - Clears tile.exploding flags and tile.bomb when fully finished.
+  - Returns (finished, killed_players).
+
+- draw(surface)
+  - Draws the current bomb fuse stage if not exploded.
+  - Draws center/horizontal/vertical explosion parts after detonation.
+
+- _add_explosion_part(part_type, tile)
+  - Appends bookkeeping and marks tile.exploding = True.
+
+- _explode(game_grid, players)
+  - Stops fuse sound.
+  - Plays explosion SFX.
+  - Adds the center tile.
+  - Propagates in four cardinal directions up to radius.
+  - Stops propagation through walls after destroying the first obstacle hit in a direction.
+  - Can create a powerup on destroyed obstacle tiles.
+  - Kills living players occupying any exploded tile.
+
+Important gameplay rules implemented here:
+- Explosion shape is a cross.
+- Obstacles block further propagation after the obstacle tile itself is affected.
+- Bomb range is taken from the owner's current bomb_range at detonation time.
+- No chain reaction between bombs is implemented in this code.
+
+
+13. Powerup and Effect System
+-----------------------------
+src/game/objects/powerup.py defines both the pickup objects on the board and the runtime modifier system attached to players.
+
+Class: EffectInstance
+Responsibilities:
+- Represent one active effect application.
+- Store:
+  - effect_id
+  - duration_ms
+  - magnitude
+  - started_at
+- Compute expires_at.
+- Compute fraction_left() for HUD display.
+
+Class: EffectSpec
+Responsibilities:
+- Describe one effect type:
+  - icon key
+  - recompute callback
+  - stacking policy
+  - max stack count
+  - default duration
+  - default magnitude
+
+Class: Effects
+Responsibilities:
+- Attach to a Player and manage active effect instances.
+- Store all active effects grouped by effect_id.
+- Support pause compensation through apply_time_offset(delta_ms).
+- Add new effects using spec-defined stacking behavior.
+- Expire finished effects each frame in update().
+- Recompute derived player stats when active instances change.
+- Provide HUD helper methods:
+  - fraction_left(effect_id)
+  - any_active(effect_id)
+  - stack_count(effect_id)
+
+Stacking policies:
+- refresh: replace with one fresh timer
+- stack: keep multiple instances up to a cap
+- ignore: only add if none currently active
+
+Recompute helpers:
+- _recompute_speed(player, instances)
+  - Resets to base speed if inactive.
+  - Adds tile-size-scaled speed bonuses for active stacks.
+
+- _recompute_bomb_range(player, instances)
+  - Adds permanent or stacked bomb radius upgrades.
+
+- _recompute_bomb_cooldown(player, instances)
+  - Reduces cooldown in 500 ms increments with a floor of 500 ms.
+
+Registered effects in SPECS:
+- speed_boost
+  - icon: powerup_speedboost
+  - stacking: refresh
+  - duration: temporary
+  - effect: move speed increase
+
+- bomb_range_up
+  - icon: powerup_bomb_range
+  - stacking: stack
+  - duration: permanent
+  - effect: increase bomb range
+
+- bomb_cooldown_reduce
+  - icon: powerup_bomb_cooldown
+  - stacking: stack
+  - duration: permanent
+  - effect: decrease bomb cooldown
+
+Class: Powerup
+Responsibilities:
+- Represent a pickup placed onto a tile.
+- Pull effect defaults from SPECS.
+- Build a tile-sized icon.
+- Apply its effect to a player when collected.
+- Play pickup audio.
+
+Factories:
+- create_powerup(...)
+- make_powerup alias
+
+
+14. Audio Pipeline
+------------------
+src/game/assets/sounds.py owns audio initialization and playback APIs.
+
+Responsibilities:
+- Initialize pygame.mixer once.
+- Resolve asset paths for source mode vs PyInstaller mode.
+- Load sound effects into a sounds dictionary.
+- Register music track file paths into a music_tracks dictionary.
+- Pre-create named mixer channels for major categories:
+  - ui
+  - gameplay
+  - explosion
+  - footsteps
+  - pickup
+  - b_place
+  - death
+- Apply master/SFX/music volume settings globally.
+- Provide helpers for one-shot sounds, looping sounds, random variant playback, music playback, and volume updates.
+
+Loaded sound effects:
+- beep
+- bomb_place
+- explosion
+- pickup
+- fuse
+- step1..step6
+- hurt1..hurt6
+
+Registered music names:
+- menu_theme
+- game_theme
+- secret_music
+
+Important design details:
+- Missing audio files do not crash loading; they print warnings.
+- play_random_sound_type prevents overlap when a specific channel is supplied and already busy.
+- play_looping_sound finds a free mixer channel dynamically.
+
+
+15. Graphics and Image Pipeline
+-------------------------------
+src/game/assets/graphics.py is the image registry and image utility layer.
+
+Responsibilities:
+- Resolve asset location for source mode vs PyInstaller mode.
+- Load every file in game/assets/images into a global images dictionary keyed by lowercase stem.
+- Resize images smoothly with resize_image().
+- Rotate images with rotate_image().
+- Hue-shift RGBA surfaces with shift_hue() using pygame.surfarray, numpy, and colorsys.
+
+This module is central because many classes depend on the shared images dictionary rather than loading files themselves.
+
+Notable asset usage:
+- menu button art
+- logo
+- board tile and obstacle art
+- player alive/dead sprites
+- bomb fuse stages and explosion sprites
+- HUD icons
+- powerup icons and grayscale variants
+- multiplier overlays
+- end screen text/images
+
+
+16. UI Layer
+------------
+The UI package mixes reusable widgets with larger screen-specific interface classes.
+
+src/game/ui/button.py
+Class: Button
+Responsibilities:
+- Wrap an image-backed clickable region.
+- Track click-on-press-inside and fire-on-release-inside behavior.
+- Draw itself.
+- Execute an action callback when clicked.
+- Play a UI beep when activated.
+
+src/game/ui/settings_ui_elements.py
+Class: Slider
+Responsibilities:
+- Render a draggable slider with label/value text.
+- Track hover and drag state.
+- Convert normalized handle position to an arbitrary numeric range.
+- Support set_value() and get_value().
+
+src/game/ui/pause_menu.py
+Class: Pause_menu
+Responsibilities:
+- Show a blocking pause overlay loop.
+- Render translucent dark overlay.
+- Create and draw resume/restart/menu buttons.
+- Handle QUIT and ESC internally while paused.
+- Return one of:
+  - "resume"
+  - "restart"
+  - "menu"
+  - "quit"
+
+src/game/ui/moving_element.py
+Class: MovingElement
+Responsibilities:
+- Animate an image from a start position to a target position over a duration.
+- Use cubic ease-out interpolation.
+- Draw current position.
+- Allow resetting and swapping the image.
+
+Class: WinnerArrow
+Responsibilities:
+- Specialize MovingElement for the endgame winner arrow.
+- Compute an arrow transform that visually connects winner text to the winner's sprite.
+- Scale and rotate the source arrow art to fit the desired vector.
+- Animate into place from below the screen.
+
+src/game/ui/draining_icon.py
+Class: DrainingIcon
+Responsibilities:
+- Draw a grayscale icon as background.
+- Reveal the colored version from bottom to top according to a fraction.
+- Used for temporary effects like speed boost.
+
+src/game/ui/stacking_icon.py
+Class: StackingIcon
+Responsibilities:
+- Draw grayscale if no stack is active, colored if active.
+- Overlay xN badges using preloaded multiplier sprites for stack counts > 1.
+- Draw an underline below the icon.
+- Used for permanent stackable effects like bomb range and cooldown upgrades.
+
+src/game/ui/player_hud.py
+Class: Player_hud
+Responsibilities:
+- Render one player's HUD panel.
+- Hue-shift the player portrait icon.
+- Swap portrait icon when the player dies.
+- Show bomb cooldown progress via bomb_timer_0..8 icons.
+- Show speed boost duration using DrainingIcon.
+- Show bomb range and bomb cooldown upgrades using StackingIcon.
+- Cache hue-shifted face icons for performance.
+
+src/game/ui/map_selection_ui.py
+Class: MapSelectionUI
+Responsibilities:
+- Present selectable map presets plus a "random" option.
+- Cycle choices with left/right arrow buttons.
+- Preview preset maps using the map_preview system.
+- When "random" is selected, show a slider for obstacle density instead of a tile preview.
+- On confirm(), persist the choice into cfg.SELECTED_MAP.
+
+src/game/ui/player_customization_ui.py
+Class: PlayerCustomizationUI
+Responsibilities:
+- Configure local player count from 1 to 4.
+- Ensure keybind and hue arrays are large enough for the current player count.
+- Constrain player hues to a preset list.
+- Build a multi-panel setup UI with:
+  - per-player hue left/right buttons
+  - per-player keybind buttons
+  - plus/minus buttons for player count
+- Enter a key capture mode when rebinding an action.
+- Update keybinds and cfg.LOCAL_PLAYERS directly.
+- Allow external confirmation through on_confirm.
+
+Important internal helpers:
+- _ensure_player_data()
+- _ensure_preset_cache()
+- _closest_preset_hue()
+- _cycle_player_hue()
+- _rebuild_ui()
+- _increase_player_count()
+- _decrease_player_count()
+
+src/game/ui/player_settings_ui.py
+Class: PlayerSettingsUI
+Responsibilities:
+- Currently just inherits PlayerCustomizationUI without changes.
+- This appears to exist as a semantic alias or future extension point.
+
+
+17. Asset Inventory
+-------------------
+Images:
+- Stored under src/game/assets/images.
+- Include menu buttons, map/random icons, player sprites, HUD icons, bomb animation frames, explosion frames, powerup icons, grayscale powerup variants, multiplier overlays, and endgame graphics.
+
+Audio:
+- Stored under src/game/assets/audio.
+- Music folder currently contains secret_music.mp3.
+- Sounds folder contains gameplay and UI wav files such as beep, fuse, explosion, pickup, hurt variants, and step variants.
+
+Config file:
+- src/game/assets/config.conf exists, but its current contents are just "None".
+- No active Python code in the inspected modules reads this file.
+
+
+18. Packaging Files
+-------------------
+AtomicBomberSigma.spec:
+- Builds from src/launch.py.
+- Bundles:
+  - src/game/assets/images -> game/assets/images
+  - src/game/assets/audio -> game/assets/audio
+  - src/game/assets/config.conf -> game/assets
+- Produces a windowed executable named AtomicBomberSigma.
+
+launch.spec:
+- Also builds from src/launch.py.
+- Bundles only images.
+- Produces a windowed executable named launch.
+- Looks like an older or incomplete packaging variant relative to AtomicBomberSigma.spec.
+
+
+19. Class-by-Class Summary
+--------------------------
+For quick reference, every class in the repo and what it does:
+
+- Tile: one board cell with sprite, obstacle state, bomb state, explosion state, neighbors, and optional powerup.
+- GridPreset: symbolic preset sampler that scales tiny pattern definitions to the active board size.
+- Player: one controllable on-board character with movement, cooldown, state, hue, and effect ownership.
+- EffectInstance: one active timed or permanent effect application.
+- EffectSpec: metadata definition for an effect type.
+- Effects: manager attached to Player that stores, updates, expires, and recomputes active effects.
+- Powerup: tile pickup that applies an effect to a player.
+- Button: image-backed clickable UI control.
+- DrainingIcon: HUD icon renderer that visually drains/fills based on remaining duration.
+- MapSelectionUI: pregame interface for choosing a map preset or a random map density.
+- Pause_menu: blocking overlay menu used during a live match.
+- MovingElement: generic eased motion animation helper for UI elements.
+- WinnerArrow: specialized MovingElement that points from winner text to the winning player.
+- PlayerCustomizationUI: pregame interface for local player count, colors, and keybinds.
+- Player_hud: in-match HUD renderer for one player.
+- PlayerSettingsUI: current alias subclass of PlayerCustomizationUI.
+- Slider: draggable numeric value selector used in settings screens.
+- StackingIcon: HUD icon renderer for stackable upgrades and multiplier overlays.
+
+
+20. Architectural Style
+-----------------------
+The project uses a pragmatic, lightweight architecture:
+
+- Shared global config/state via cfg and asset registries.
+- Small domain objects with embedded behavior.
+- Thin system modules for input, movement, bomb orchestration, and map previews.
+- Screen-oriented core modules for app states.
+- UI widgets that are mostly image-based and manually composed.
+
+This is not an ECS, not MVC in a strict sense, and not a formal engine. It is closer to a structured procedural game prototype with object-oriented gameplay entities.
+
+
+21. Important Couplings and Data Flow
+-------------------------------------
+The most important runtime couplings are:
+
+- config.py -> nearly every module for dimensions, display, timing, gameplay constants
+- graphics.images -> all rendering-heavy modules
+- sounds.py -> menu buttons, player movement, bomb events, pickups, music
+- input._event_list -> menus, bomb placement, pause detection
+- Player.effects -> HUD rendering, movement speed, bomb range, bomb cooldown
+- grid.create_grid() -> gameplay map creation and UI map previews
+- Player_hud -> depends on player state and effect stack/fraction queries
+
+State mutations worth noting:
+- cfg.LOCAL_PLAYERS, cfg.PLAYER_HUES, cfg.SELECTED_MAP, cfg.RANDOM_MAP_OBSTACLE_CHANCE, and volume fields are all mutated directly by setup/options UI.
+- keybinds.keybinds is mutated directly by the player customization screen.
+- Tile instances are mutated heavily during gameplay for bombs, explosions, obstacles, and powerups.
+
+
+22. Known Behavioral Notes From Inspection
+------------------------------------------
+A few implementation details stand out from the current code:
+
+- config.py initializes the display at import time, so importing cfg has side effects.
+- game_loop.py preloads player assets on background threads for smoother runtime hue-shift behavior.
+- map previews create full temporary grids each time they render or measure.
+- draw_grid(..., resized=...) mutates tile.pos when resizing, which is unusual and could matter if reused outside previews.
+- config.conf is packaged but appears unused by the current Python code.
+- player_config.py currently contains only "pass" and is unused.
+- Bomb logic does not implement visible bomb chain reactions.
+
+
+23. Complete Source File Map
+----------------------------
+All Python source files inspected:
+
+- src/launch.py
+- src/game/assets/config.py
+- src/game/assets/graphics.py
+- src/game/assets/keybinds.py
+- src/game/assets/player_config.py
+- src/game/assets/sounds.py
+- src/game/core/game_loop.py
+- src/game/core/game_state_manager.py
+- src/game/core/main_menu.py
+- src/game/core/options_menu.py
+- src/game/core/pregame_phase.py
+- src/game/objects/bomb.py
+- src/game/objects/grid.py
+- src/game/objects/grid_preset.py
+- src/game/objects/player.py
+- src/game/objects/powerup.py
+- src/game/objects/tile.py
+- src/game/systems/bomb_logic.py
+- src/game/systems/input.py
+- src/game/systems/map_preview.py
+- src/game/systems/movement.py
+- src/game/ui/button.py
+- src/game/ui/draining_icon.py
+- src/game/ui/map_selection_ui.py
+- src/game/ui/moving_element.py
+- src/game/ui/pause_menu.py
+- src/game/ui/player_customization_ui.py
+- src/game/ui/player_hud.py
+- src/game/ui/player_settings_ui.py
+- src/game/ui/settings_ui_elements.py
+- src/game/ui/stacking_icon.py
+
+
+24. End-to-End Summary
+----------------------
+Atomic BomberSigma boots by initializing Pygame, creating a fullscreen logical display, loading all visual and audio assets into shared registries, and entering a manual state manager. The state manager cycles through menu, pregame setup, and active match states. The active match builds a grid, spawns players, manages bombs and powerups, renders HUDs, supports pausing and restarting, and ends once zero or one players remain alive.
+
+The core gameplay loop is straightforward:
+- choose map and player setup
+- generate board
+- spawn players
+- poll input every frame
+- move players tile by tile
+- place bombs on cooldown
+- explode bombs in cross patterns
+- destroy obstacles
+- spawn powerups
+- update HUD and endgame visuals
+
+The codebase is small enough to follow end-to-end, but it already includes useful extension points for effects, map presets, packaging, and setup UI.

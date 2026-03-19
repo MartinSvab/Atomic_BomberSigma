@@ -67,6 +67,8 @@ class PlayerCustomizationUI:
         for i in range(len(cfg.PLAYER_HUES)):
             cfg.PLAYER_HUES[i] = self._closest_preset_hue(cfg.PLAYER_HUES[i])
 
+        self._normalize_active_player_hues()
+
     def _ensure_preset_cache(self):
         if not PlayerCustomizationUI._arrow_images:
             PlayerCustomizationUI._arrow_images = {
@@ -87,10 +89,35 @@ class PlayerCustomizationUI:
         hue = self._closest_preset_hue(cfg.PLAYER_HUES[player_index])
         return PRESET_HUES.index(hue)
 
+    def _normalize_active_player_hues(self):
+        used_hues = set()
+        for player_index in range(self.player_count):
+            preferred_hue = self._closest_preset_hue(cfg.PLAYER_HUES[player_index])
+            if preferred_hue not in used_hues:
+                cfg.PLAYER_HUES[player_index] = preferred_hue
+                used_hues.add(preferred_hue)
+                continue
+
+            for fallback_hue in PRESET_HUES:
+                if fallback_hue not in used_hues:
+                    cfg.PLAYER_HUES[player_index] = fallback_hue
+                    used_hues.add(fallback_hue)
+                    break
+
     def _cycle_player_hue(self, player_index: int, direction: int):
         current_index = self._get_hue_index(player_index)
-        next_index = (current_index + direction) % len(PRESET_HUES)
-        cfg.PLAYER_HUES[player_index] = PRESET_HUES[next_index]
+        unavailable_hues = {
+            self._closest_preset_hue(cfg.PLAYER_HUES[idx])
+            for idx in range(self.player_count)
+            if idx != player_index
+        }
+
+        for step in range(1, len(PRESET_HUES) + 1):
+            next_index = (current_index + (direction * step)) % len(PRESET_HUES)
+            next_hue = PRESET_HUES[next_index]
+            if next_hue not in unavailable_hues:
+                cfg.PLAYER_HUES[player_index] = next_hue
+                break
 
     def _rebuild_ui(self):
         self.player_panels = []

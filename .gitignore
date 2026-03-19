@@ -22,3 +22,4 @@ build/
 dist/
 launch.spec
 AtomicBomberSigma.spec
+BomberSigma.spec

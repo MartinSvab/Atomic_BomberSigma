@@ -10,8 +10,9 @@ from game.objects.grid_preset import _presets
 class MapSelectionUI:
     def __init__(self):
         self.map_names = list(_presets.keys()) + ["random"]
-        self.index = 0
+        self.index = self.map_names.index(cfg.SELECTED_MAP) if cfg.SELECTED_MAP in self.map_names else 0
         self.done = False
+        self.title_font = pygame.font.SysFont(None, 54)
         self.random_obstacle_slider = settings_ui_elements.Slider(
             (cfg.DISPLAY_CENTER_X, cfg.DISPLAY_CENTER_Y + 320),
             (420, 24),
@@ -42,6 +43,12 @@ class MapSelectionUI:
     @property
     def selected_map_name(self):
         return self.map_names[self.index]
+
+    @property
+    def selected_map_label(self):
+        if self.selected_map_name == "random":
+            return "Random"
+        return self.selected_map_name.replace("_", " ").title()
 
     def prev_map(self):
         self.index = (self.index - 1) % len(self.map_names)
@@ -89,6 +96,10 @@ class MapSelectionUI:
             cfg.DISPLAY_CENTER_X - rect.w // 2,
             cfg.DISPLAY_CENTER_Y - rect.h // 2
             )
+
+        title_surface = self.title_font.render(self.selected_map_label, True, "white")
+        title_rect = title_surface.get_rect(center=(cfg.DISPLAY_CENTER_X, max(60, pos[1] - 55)))
+        surface.blit(title_surface, title_rect)
 
         if self.selected_map_name != "random":
             map_preview.preview_map(self.selected_map_name, pos, surface, scale)

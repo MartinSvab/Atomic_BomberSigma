@@ -17,6 +17,8 @@ def run():
     options_button_image = graphics.resize_image(images["options_button"],0.2)
     quit_button_image = graphics.resize_image(images["quit_button"],0.2)
     logo_image = graphics.resize_image(images["logo"],0.8)
+    version_font = pygame.font.SysFont(None, 34)
+    version_surface = version_font.render("v.0.3", True, "white")
 
 
     def start_game():
@@ -59,6 +61,7 @@ def run():
         
         cfg.DISPLAY.fill((35,35,35)) # Fill the display with a color (grey)
 
+        cfg.DISPLAY.blit(version_surface, (24, 18))
                 
         for btn in buttons:
                     btn.draw(cfg.DISPLAY)

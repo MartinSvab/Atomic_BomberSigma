@@ -1,8 +1,10 @@
 from game.assets.graphics import initialize_images
 from game.assets.sounds import initialize_sounds
 from game.assets import config as cfg # Import config to initialize display settings
+from game.assets.settings_store import load_runtime_settings
 
 # One time loading of assets
+load_runtime_settings()
 initialize_images()
 initialize_sounds()
 
